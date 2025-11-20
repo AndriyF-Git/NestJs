@@ -1,4 +1,5 @@
-import { IsEmail, IsString, Matches } from 'class-validator';
+import { IsEmail, IsInt, IsString, Matches } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class RegisterDto {
   @IsEmail()
@@ -10,4 +11,11 @@ export class RegisterDto {
       'Password must be at least 8 characters long and include upper and lower case letters, a number and a special character',
   })
   password: string;
+
+  @IsString()
+  captchaId: string;
+
+  @Type(() => Number)
+  @IsInt()
+  captchaAnswer: number;
 }
