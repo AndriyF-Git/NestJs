@@ -5,11 +5,12 @@ import {
 } from '@nestjs/common';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import * as bcrypt from 'bcrypt';
 
 interface User {
   id: number;
   email: string;
-  password: string; // потім тут буде hash
+  passwordHash: string;
 }
 
 @Injectable()
@@ -17,39 +18,43 @@ export class AuthService {
   private users: User[] = [];
   private nextId = 1;
 
-  register(dto: RegisterDto) {
+  async register(dto: RegisterDto) {
     const existing = this.users.find((u) => u.email === dto.email);
     if (existing) {
       throw new BadRequestException('User with this email already exists');
     }
 
+    const passwordHash = await bcrypt.hash(dto.password, 10); // saltRounds = 10
+
     const user: User = {
       id: this.nextId++,
       email: dto.email,
-      password: dto.password, // потім тут буде bcrypt.hash(...)
+      passwordHash,
     };
 
     this.users.push(user);
 
-    // не повертаємо пароль
     return {
       id: user.id,
       email: user.email,
     };
   }
 
-  login(dto: LoginDto) {
+  async login(dto: LoginDto) {
     const user = this.users.find((u) => u.email === dto.email);
+
     if (!user) {
-      // тут за умовою задачі ми потім будемо "редіректити" на реєстрацію
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('Invalid email or password');
     }
 
-    if (user.password !== dto.password) {
-      throw new UnauthorizedException('Invalid credentials');
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid email or password');
     }
 
-    // тут потім зʼявиться видача токена / сесії
     return {
       message: 'Login successful',
       user: {
