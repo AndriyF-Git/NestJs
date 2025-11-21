@@ -10,6 +10,8 @@ import { CaptchaService } from '../security/captcha.service';
 import { MailService } from '../mail/mail.service';
 import { randomUUID } from 'crypto';
 import { LoginAttemptsService } from '../security/login-attempts.service';
+import { TwoFactorToggleDto } from './dto/two-factor-toggle.dto';
+import { TwoFactorVerifyDto } from './dto/two-factor-verify.dto';
 
 interface User {
   id: number;
@@ -18,6 +20,9 @@ interface User {
   isActive: boolean;
   failedLoginAttempts: number;
   lockedUntil: Date | null;
+  twoFactorEnabled: boolean;
+  twoFactorLoginCode: string | null;
+  twoFactorLoginCodeExpiresAt: Date | null;
 }
 
 interface ActivationToken {
@@ -43,6 +48,9 @@ export class AuthService {
   getCaptcha() {
     return this.captchaService.createSimpleCaptcha();
   }
+  private generateTwoFactorCode(): string {
+    return String(Math.floor(100000 + Math.random() * 900000));
+  }
 
   async register(dto: RegisterDto) {
     // Перевірка CAPTCHA
@@ -63,6 +71,9 @@ export class AuthService {
       isActive: false,
       failedLoginAttempts: 0,
       lockedUntil: null,
+      twoFactorEnabled: false,
+      twoFactorLoginCode: null,
+      twoFactorLoginCodeExpiresAt: null,
     };
 
     this.users.push(user);
@@ -127,7 +138,6 @@ export class AuthService {
     const lockDurationMinutes = 15;
     const maxFailedAttempts = 5;
 
-    // Якщо юзера немає – теж логувати спробу, але без user-поля
     if (!user) {
       this.loginAttemptsService.logAttempt({
         email: dto.email,
@@ -138,7 +148,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    // Перевіряємо, чи не заблокований акаунт
     if (user.lockedUntil && user.lockedUntil.getTime() > now.getTime()) {
       this.loginAttemptsService.logAttempt({
         email: dto.email,
@@ -171,7 +180,6 @@ export class AuthService {
     if (!isPasswordValid) {
       user.failedLoginAttempts += 1;
 
-      // Якщо перевищили ліміт – блокуємо акаунт
       if (user.failedLoginAttempts >= maxFailedAttempts) {
         const lockedUntil = new Date(
           now.getTime() + lockDurationMinutes * 60 * 1000,
@@ -180,7 +188,7 @@ export class AuthService {
       }
 
       this.loginAttemptsService.logAttempt({
-        email: dto.email,
+        email: user.email,
         success: false,
         timestamp: now,
       });
@@ -188,12 +196,145 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    // Успішний логін – скидаємо лічильник
+    // пароль вірний, обнуляємо лічильник
     user.failedLoginAttempts = 0;
     user.lockedUntil = null;
 
+    // Якщо 2FA вимкнена – логін як раніше
+    if (!user.twoFactorEnabled) {
+      this.loginAttemptsService.logAttempt({
+        email: user.email,
+        success: true,
+        timestamp: now,
+      });
+
+      return {
+        message: 'Login successful',
+        user: {
+          id: user.id,
+          email: user.email,
+        },
+      };
+    }
+
+    // Якщо 2FA увімкнена, шлемо код на пошту і не логінимо одразу
+    const code = this.generateTwoFactorCode();
+    user.twoFactorLoginCode = code;
+    user.twoFactorLoginCodeExpiresAt = new Date(
+      now.getTime() + 10 * 60 * 1000, // 10 хв
+    );
+
+    await this.mailService.sendTwoFactorCode(user.email, code);
+
+    // Лог: пароль пройшов, але повний логін ще не завершено
     this.loginAttemptsService.logAttempt({
-      email: dto.email,
+      email: user.email,
+      success: false,
+      timestamp: now,
+    });
+
+    return {
+      message: 'Two-factor authentication code has been sent to your email',
+      twoFactorRequired: true,
+    };
+  }
+
+  getLoginAttempts() {
+    return this.loginAttemptsService.getAllAttempts();
+  }
+
+  async enableTwoFactor(dto: TwoFactorToggleDto) {
+    const user = this.users.find((u) => u.email === dto.email);
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException(
+        'Account is not activated. Please check your email.',
+      );
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    if (user.twoFactorEnabled) {
+      throw new BadRequestException(
+        'Two-factor authentication is already enabled',
+      );
+    }
+
+    user.twoFactorEnabled = true;
+
+    return {
+      message: 'Two-factor authentication has been enabled for your account',
+    };
+  }
+
+  async disableTwoFactor(dto: TwoFactorToggleDto) {
+    const user = this.users.find((u) => u.email === dto.email);
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    if (!user.twoFactorEnabled) {
+      throw new BadRequestException('Two-factor authentication is not enabled');
+    }
+
+    user.twoFactorEnabled = false;
+    user.twoFactorLoginCode = null;
+    user.twoFactorLoginCodeExpiresAt = null;
+
+    return {
+      message: 'Two-factor authentication has been disabled for your account',
+    };
+  }
+
+  verifyTwoFactorLogin(dto: TwoFactorVerifyDto) {
+    const user = this.users.find((u) => u.email === dto.email);
+    const now = new Date();
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or 2FA code');
+    }
+
+    if (!user.twoFactorEnabled) {
+      throw new BadRequestException('Two-factor authentication is not enabled');
+    }
+
+    if (
+      !user.twoFactorLoginCode ||
+      !user.twoFactorLoginCodeExpiresAt ||
+      user.twoFactorLoginCodeExpiresAt.getTime() < now.getTime()
+    ) {
+      user.twoFactorLoginCode = null;
+      user.twoFactorLoginCodeExpiresAt = null;
+      throw new UnauthorizedException('2FA code has expired or is invalid');
+    }
+
+    if (user.twoFactorLoginCode !== dto.code) {
+      throw new UnauthorizedException('Invalid 2FA code');
+    }
+
+    // Код вірний – очищаємо його
+    user.twoFactorLoginCode = null;
+    user.twoFactorLoginCodeExpiresAt = null;
+
+    this.loginAttemptsService.logAttempt({
+      email: user.email,
       success: true,
       timestamp: now,
     });
@@ -205,9 +346,5 @@ export class AuthService {
         email: user.email,
       },
     };
-  }
-
-  getLoginAttempts() {
-    return this.loginAttemptsService.getAllAttempts();
   }
 }

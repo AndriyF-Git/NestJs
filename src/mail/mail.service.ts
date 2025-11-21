@@ -44,4 +44,18 @@ export class MailService {
     // Лог для себе
     console.log('Activation email sent to', email, '=>', activationLink);
   }
+  async sendTwoFactorCode(email: string, code: string) {
+    await this.transporter.sendMail({
+      from: process.env.MAIL_FROM,
+      to: email,
+      subject: 'Ваш код для входу (2FA)',
+      html: `
+      <p>Ваш код для двофакторної аутентифікації:</p>
+      <p style="font-size: 20px; font-weight: bold;">${code}</p>
+      <p>Код дійсний протягом 10 хвилин.</p>
+    `,
+    });
+
+    console.log('2FA code sent to', email, '=>', code);
+  }
 }
