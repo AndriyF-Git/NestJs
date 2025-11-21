@@ -9,7 +9,7 @@ export class AuthController {
 
   @Get('captcha')
   getCaptcha() {
-    return this.authService.createCaptcha();
+    return this.authService.getCaptcha();
   }
 
   @Post('register')
