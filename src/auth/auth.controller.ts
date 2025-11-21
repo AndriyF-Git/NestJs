@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -10,6 +10,11 @@ export class AuthController {
   @Get('captcha')
   getCaptcha() {
     return this.authService.getCaptcha();
+  }
+
+  @Get('activate')
+  activate(@Query('token') token: string) {
+    return this.authService.activateAccount(token);
   }
 
   @Post('register')
