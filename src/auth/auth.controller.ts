@@ -17,6 +17,11 @@ export class AuthController {
     return this.authService.activateAccount(token);
   }
 
+  @Get('login-attempts')
+  getLoginAttempts() {
+    return this.authService.getLoginAttempts();
+  }
+
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);

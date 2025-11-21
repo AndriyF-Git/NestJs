@@ -9,12 +9,15 @@ import * as bcrypt from 'bcrypt';
 import { CaptchaService } from '../security/captcha.service';
 import { MailService } from '../mail/mail.service';
 import { randomUUID } from 'crypto';
+import { LoginAttemptsService } from '../security/login-attempts.service';
 
 interface User {
   id: number;
   email: string;
   passwordHash: string;
   isActive: boolean;
+  failedLoginAttempts: number;
+  lockedUntil: Date | null;
 }
 
 interface ActivationToken {
@@ -34,6 +37,7 @@ export class AuthService {
   constructor(
     private readonly captchaService: CaptchaService,
     private readonly mailService: MailService,
+    private readonly loginAttemptsService: LoginAttemptsService,
   ) {}
 
   getCaptcha() {
@@ -56,7 +60,9 @@ export class AuthService {
       id: this.nextId++,
       email: dto.email,
       passwordHash,
-      isActive: false, // новий користувач поки не активний
+      isActive: false,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
     };
 
     this.users.push(user);
@@ -117,11 +123,41 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = this.users.find((u) => u.email === dto.email);
 
+    const now = new Date();
+    const lockDurationMinutes = 15;
+    const maxFailedAttempts = 5;
+
+    // Якщо юзера немає – теж логувати спробу, але без user-поля
     if (!user) {
+      this.loginAttemptsService.logAttempt({
+        email: dto.email,
+        success: false,
+        timestamp: now,
+      });
+
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    // Перевіряємо, чи не заблокований акаунт
+    if (user.lockedUntil && user.lockedUntil.getTime() > now.getTime()) {
+      this.loginAttemptsService.logAttempt({
+        email: dto.email,
+        success: false,
+        timestamp: now,
+      });
+
+      throw new UnauthorizedException(
+        `Account is temporarily locked until ${user.lockedUntil.toISOString()}`,
+      );
+    }
+
     if (!user.isActive) {
+      this.loginAttemptsService.logAttempt({
+        email: dto.email,
+        success: false,
+        timestamp: now,
+      });
+
       throw new UnauthorizedException(
         'Account is not activated. Please check your email.',
       );
@@ -131,9 +167,36 @@ export class AuthService {
       dto.password,
       user.passwordHash,
     );
+
     if (!isPasswordValid) {
+      user.failedLoginAttempts += 1;
+
+      // Якщо перевищили ліміт – блокуємо акаунт
+      if (user.failedLoginAttempts >= maxFailedAttempts) {
+        const lockedUntil = new Date(
+          now.getTime() + lockDurationMinutes * 60 * 1000,
+        );
+        user.lockedUntil = lockedUntil;
+      }
+
+      this.loginAttemptsService.logAttempt({
+        email: dto.email,
+        success: false,
+        timestamp: now,
+      });
+
       throw new UnauthorizedException('Invalid email or password');
     }
+
+    // Успішний логін – скидаємо лічильник
+    user.failedLoginAttempts = 0;
+    user.lockedUntil = null;
+
+    this.loginAttemptsService.logAttempt({
+      email: dto.email,
+      success: true,
+      timestamp: now,
+    });
 
     return {
       message: 'Login successful',
@@ -142,5 +205,9 @@ export class AuthService {
         email: user.email,
       },
     };
+  }
+
+  getLoginAttempts() {
+    return this.loginAttemptsService.getAllAttempts();
   }
 }

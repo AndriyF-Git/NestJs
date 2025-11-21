@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { CaptchaService } from './captcha.service';
+import { LoginAttemptsService } from './login-attempts.service';
 
 @Module({
-  providers: [CaptchaService],
-  exports: [CaptchaService], // важливо: щоб інші модулі могли його використовували
+  providers: [CaptchaService, LoginAttemptsService],
+  exports: [CaptchaService, LoginAttemptsService],
 })
 export class SecurityModule {}
