@@ -78,8 +78,8 @@ export class AuthService {
       used: false,
     });
 
-    // Надсилаємо лист (поки лог у консоль)
-    this.mailService.sendActivationEmail(user.email, token);
+    // Надсилаємо лист
+    await this.mailService.sendActivationEmail(user.email, token);
 
     return {
       id: user.id,
