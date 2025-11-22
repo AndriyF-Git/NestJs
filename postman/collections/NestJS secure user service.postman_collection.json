@@ -1,0 +1,1093 @@
+{
+  "info": {
+    "_postman_id": "ff65c463-615b-473e-9bc4-35c256904a6e",
+    "name": "NestJS secure user service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "44025195",
+    "_collection_link": "https://andriy-806718.postman.co/workspace/c24ab227-6bb7-4c14-89ed-8cfb6b7018ff/collection/44025195-ff65c463-615b-473e-9bc4-35c256904a6e?action=share&source=collection_link&creator=44025195"
+  },
+  "item": [
+    {
+      "name": "Scenario: Register + Activate + login",
+      "item": [
+        {
+          "name": "Captcha own (v0.0.1) Copy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "ffcad011-8de6-4d1b-8b43-36afed25bd26",
+                "exec": [
+                  "pm.test('Status is 200', function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "const data = pm.response.json();\r",
+                  "\r",
+                  "// зберігаємо id\r",
+                  "pm.environment.set('captchaId', data.captchaId);\r",
+                  "\r",
+                  "// пробуємо дістати приклад типу \"2 + 6\"\r",
+                  "if (data.question) {\r",
+                  "  const match = data.question.match(/(\\d+)\\s*([+\\-*/])\\s*(\\d+)/);\r",
+                  "  if (match) {\r",
+                  "    const a = parseInt(match[1], 10);\r",
+                  "    const op = match[2];\r",
+                  "    const b = parseInt(match[3], 10);\r",
+                  "    let answer;\r",
+                  "\r",
+                  "    switch (op) {\r",
+                  "      case '+': answer = a + b; break;\r",
+                  "      case '-': answer = a - b; break;\r",
+                  "      case '*': answer = a * b; break;\r",
+                  "      case '/': answer = a / b; break;\r",
+                  "    }\r",
+                  "\r",
+                  "    if (answer !== undefined) {\r",
+                  "      pm.environment.set('captchaAnswer', answer);\r",
+                  "    }\r",
+                  "  }\r",
+                  "}\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "1773474a-af62-4408-aded-f6a2386eb43d",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/auth/captcha",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "auth",
+                "captcha"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register Copy",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "18c4ab57-7afa-477d-9aed-fc127f2e52c2",
+                "exec": [
+                  "const rnd = Math.floor(Math.random() * 1000000);\r",
+                  "const ts = Date.now();\r",
+                  "const email = `test${ts}_${rnd}@example.com`;\r",
+                  "\r",
+                  "pm.environment.set('email', email);\r",
+                  "pm.environment.set('password', 'Qwerty123!');\r",
+                  "\r",
+                  "console.log('Using email for register:', email);\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "30b9a79c-4503-40a8-a159-80be3c1322de",
+                "exec": [
+                  "pm.test('Status is 201 або 200', function () {\r",
+                  "  pm.expect([200, 201]).to.include(pm.response.code);\r",
+                  "});\r",
+                  "\r",
+                  "const data = pm.response.json();\r",
+                  "\r",
+                  "// якщо у відповіді є activationToken — збережемо його\r",
+                  "if (data.activationToken) {\r",
+                  "  pm.environment.set('activationToken', data.activationToken);\r",
+                  "}\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "5888503a-3ee4-49f3-8131-c94a81f6249f",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\",\r\n  \"captchaId\": \"{{captchaId}}\",\r\n  \"captchaAnswer\": {{captchaAnswer}}\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/auth/register",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Activation account token Copy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "a5df697d-6f46-4cf5-b660-61515ddd8201",
+                "exec": [
+                  "pm.test('Status is 200', function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "const data = pm.response.json();\r",
+                  "console.log('Activation response:', data);\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "38a6ac9c-7136-4236-aa0b-6fcd20116432",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/auth/activate?token={{activationToken}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "auth",
+                "activate"
+              ],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "{{activationToken}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "login (post) Copy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "a4de0a44-5ad4-4dfa-8b02-166e3c440f2b",
+                "exec": [
+                  "pm.test('Login повертає 200', function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "const data = pm.response.json();\r",
+                  "console.log('Login response:', data);\r",
+                  "\r",
+                  "// Якщо 2FA не увімкнена — просто логін успішний\r",
+                  "if (!data.twoFactorRequired) {\r",
+                  "  pm.test('Логін без 2FA успішний', function () {\r",
+                  "    pm.expect(data.message).to.include('Login successful');\r",
+                  "  });\r",
+                  "  // На всяк випадок очищаємо попередній код\r",
+                  "  pm.environment.unset('twoFactorCode');\r",
+                  "} else {\r",
+                  "  // 2FA увімкнена — бек надіслав код на пошту\r",
+                  "  pm.test('Сервер вимагає 2FA', function () {\r",
+                  "    pm.expect(data.twoFactorRequired).to.be.true;\r",
+                  "  });\r",
+                  "\r",
+                  "  // У DEV середовищі ти повертаєш twoFactorCode в JSON\r",
+                  "  if (data.twoFactorCode) {\r",
+                  "    pm.environment.set('twoFactorCode', data.twoFactorCode);\r",
+                  "    console.log('Saved 2FA code to env:', data.twoFactorCode);\r",
+                  "  } else {\r",
+                  "    console.warn('twoFactorCode не прийшов у відповіді (прод режим?)');\r",
+                  "  }\r",
+                  "}\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "d8762fe0-7095-4331-ae41-b34631692477",
+                "exec": [
+                  "console.log('Login with email:', pm.environment.get('email'));\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "ec2c16a6-8d2b-42ba-b5a1-f39c18d1e1fe",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/auth/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login logs Copy",
+          "id": "d30f6803-8451-4959-8245-e66a91d0fe18",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/auth/login-attempts",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "auth",
+                "login-attempts"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "e0f4436b-1ce3-4529-9fde-4bf695ba5857",
+      "description": "First Scenario, register + login"
+    },
+    {
+      "name": "Scenario: login + enable 2FA + login again + disable 2FA",
+      "item": [
+        {
+          "name": "Enable 2FA Copy",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "90e91703-761d-4956-8c5e-b3892970396b",
+                "exec": [
+                  "pm.test('Є email в env', function () {\r",
+                  "  pm.expect(pm.environment.get('email')).to.be.a('string');\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('Є password в env', function () {\r",
+                  "  pm.expect(pm.environment.get('password')).to.be.a('string');\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "f6aaabe9-7394-4e7f-9de0-6bf2c01c4ce9",
+                "exec": [
+                  "pm.test('Enable 2FA повертає 200', function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "const data = pm.response.json();\r",
+                  "console.log('Enable 2FA response:', data);\r",
+                  "\r",
+                  "pm.test('Є очікуване повідомлення', function () {\r",
+                  "  pm.expect(data.message).to.include('enabled for your account');\r",
+                  "});\r",
+                  "\r",
+                  "// Можна завести прапорець в env\r",
+                  "pm.environment.set('twoFactorEnabled', 'true');\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "260f8ed3-e821-4f2e-8250-72713ed62d21",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/auth/2fa/enable",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "auth",
+                "2fa",
+                "enable"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "login (post) Copy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "a4de0a44-5ad4-4dfa-8b02-166e3c440f2b",
+                "exec": [
+                  "pm.test('Login повертає 200', function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "const data = pm.response.json();\r",
+                  "console.log('Login response:', data);\r",
+                  "\r",
+                  "// Якщо 2FA не увімкнена — просто логін успішний\r",
+                  "if (!data.twoFactorRequired) {\r",
+                  "  pm.test('Логін без 2FA успішний', function () {\r",
+                  "    pm.expect(data.message).to.include('Login successful');\r",
+                  "  });\r",
+                  "  // На всяк випадок очищаємо попередній код\r",
+                  "  pm.environment.unset('twoFactorCode');\r",
+                  "} else {\r",
+                  "  // 2FA увімкнена — бек надіслав код на пошту\r",
+                  "  pm.test('Сервер вимагає 2FA', function () {\r",
+                  "    pm.expect(data.twoFactorRequired).to.be.true;\r",
+                  "  });\r",
+                  "\r",
+                  "  // У DEV середовищі ти повертаєш twoFactorCode в JSON\r",
+                  "  if (data.twoFactorCode) {\r",
+                  "    pm.environment.set('twoFactorCode', data.twoFactorCode);\r",
+                  "    console.log('Saved 2FA code to env:', data.twoFactorCode);\r",
+                  "  } else {\r",
+                  "    console.warn('twoFactorCode не прийшов у відповіді (прод режим?)');\r",
+                  "  }\r",
+                  "}\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "d8762fe0-7095-4331-ae41-b34631692477",
+                "exec": [
+                  "console.log('Login with email:', pm.environment.get('email'));\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "fec454cc-45c3-4c36-8e64-e53a5a9252cf",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/auth/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "login (2FA) Copy",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "193fbb2f-d8f4-41e3-b980-b1c263a2fc47",
+                "exec": [
+                  "console.log('Using 2FA code:', pm.environment.get('twoFactorCode'));\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "1bb2ac21-787f-40b9-9a98-53376bced7d1",
+                "exec": [
+                  "pm.test('2FA login повертає 200', function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "const data = pm.response.json();\r",
+                  "console.log('2FA login response:', data);\r",
+                  "\r",
+                  "pm.test('Повідомлення про успішний логін', function () {\r",
+                  "  pm.expect(data.message).to.include('Login successful');\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('У відповіді є user', function () {\r",
+                  "  pm.expect(data).to.have.property('user');\r",
+                  "  pm.expect(data.user).to.have.property('email');\r",
+                  "});\r",
+                  "\r",
+                  "// Можеш поставити собі \"флажок\", що юзер залогінений\r",
+                  "pm.environment.set('lastLoginEmail', data.user.email);\r",
+                  "pm.environment.set('isLoggedIn', 'true');\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "db418a5a-6900-4a51-8045-e744e03fb150",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"code\": \"{{twoFactorCode}}\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/auth/login/2fa",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "auth",
+                "login",
+                "2fa"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Disable 2FA Copy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "e5d7f66a-3167-4243-8445-796694d4dd4e",
+                "exec": [
+                  "pm.test('Disable 2FA повертає 200', function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "const data = pm.response.json();\r",
+                  "console.log('Disable 2FA response:', data);\r",
+                  "\r",
+                  "pm.test('Є очікуване повідомлення', function () {\r",
+                  "  pm.expect(data.message).to.include('disabled for your account');\r",
+                  "});\r",
+                  "\r",
+                  "pm.environment.set('twoFactorEnabled', 'false');\r",
+                  "// на всяк випадок чистимо код\r",
+                  "pm.environment.unset('twoFactorCode');\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "04680949-5cb2-46a7-a547-31ad7af6a913",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/auth/2fa/disable",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "auth",
+                "2fa",
+                "disable"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "1ef66d67-c60d-4279-8aa1-a74300403bec"
+    },
+    {
+      "name": "Captcha own (v0.0.1)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "id": "ffcad011-8de6-4d1b-8b43-36afed25bd26",
+            "exec": [
+              "pm.test('Status is 200', function () {\r",
+              "  pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "const data = pm.response.json();\r",
+              "\r",
+              "// зберігаємо id\r",
+              "pm.environment.set('captchaId', data.captchaId);\r",
+              "\r",
+              "// пробуємо дістати приклад типу \"2 + 6\"\r",
+              "if (data.question) {\r",
+              "  const match = data.question.match(/(\\d+)\\s*([+\\-*/])\\s*(\\d+)/);\r",
+              "  if (match) {\r",
+              "    const a = parseInt(match[1], 10);\r",
+              "    const op = match[2];\r",
+              "    const b = parseInt(match[3], 10);\r",
+              "    let answer;\r",
+              "\r",
+              "    switch (op) {\r",
+              "      case '+': answer = a + b; break;\r",
+              "      case '-': answer = a - b; break;\r",
+              "      case '*': answer = a * b; break;\r",
+              "      case '/': answer = a / b; break;\r",
+              "    }\r",
+              "\r",
+              "    if (answer !== undefined) {\r",
+              "      pm.environment.set('captchaAnswer', answer);\r",
+              "    }\r",
+              "  }\r",
+              "}\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "id": "7e9ffbc7-6748-49bd-8fb4-f2334011cf88",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseURL}}/auth/captcha",
+          "host": [
+            "{{baseURL}}"
+          ],
+          "path": [
+            "auth",
+            "captcha"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Register",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "id": "18c4ab57-7afa-477d-9aed-fc127f2e52c2",
+            "exec": [
+              "const rnd = Math.floor(Math.random() * 1000000);\r",
+              "const ts = Date.now();\r",
+              "const email = `test${ts}_${rnd}@example.com`;\r",
+              "\r",
+              "pm.environment.set('email', email);\r",
+              "pm.environment.set('password', 'Qwerty123!');\r",
+              "\r",
+              "console.log('Using email for register:', email);\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "id": "30b9a79c-4503-40a8-a159-80be3c1322de",
+            "exec": [
+              "pm.test('Status is 201 або 200', function () {\r",
+              "  pm.expect([200, 201]).to.include(pm.response.code);\r",
+              "});\r",
+              "\r",
+              "const data = pm.response.json();\r",
+              "\r",
+              "// якщо у відповіді є activationToken — збережемо його\r",
+              "if (data.activationToken) {\r",
+              "  pm.environment.set('activationToken', data.activationToken);\r",
+              "}\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "id": "13589522-66f1-4da3-ba50-989011e7b4e3",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\",\r\n  \"captchaId\": \"{{captchaId}}\",\r\n  \"captchaAnswer\": {{captchaAnswer}}\r\n}\r\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseURL}}/auth/register",
+          "host": [
+            "{{baseURL}}"
+          ],
+          "path": [
+            "auth",
+            "register"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Activation account token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "id": "a5df697d-6f46-4cf5-b660-61515ddd8201",
+            "exec": [
+              "pm.test('Status is 200', function () {\r",
+              "  pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "const data = pm.response.json();\r",
+              "console.log('Activation response:', data);\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "id": "96ef700f-7722-4dd6-bb92-4e780545dd6d",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseURL}}/auth/activate?token={{activationToken}}",
+          "host": [
+            "{{baseURL}}"
+          ],
+          "path": [
+            "auth",
+            "activate"
+          ],
+          "query": [
+            {
+              "key": "token",
+              "value": "{{activationToken}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "login (post)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "id": "a4de0a44-5ad4-4dfa-8b02-166e3c440f2b",
+            "exec": [
+              "pm.test('Login повертає 200', function () {\r",
+              "  pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "const data = pm.response.json();\r",
+              "console.log('Login response:', data);\r",
+              "\r",
+              "// Якщо 2FA не увімкнена — просто логін успішний\r",
+              "if (!data.twoFactorRequired) {\r",
+              "  pm.test('Логін без 2FA успішний', function () {\r",
+              "    pm.expect(data.message).to.include('Login successful');\r",
+              "  });\r",
+              "  // На всяк випадок очищаємо попередній код\r",
+              "  pm.environment.unset('twoFactorCode');\r",
+              "} else {\r",
+              "  // 2FA увімкнена — бек надіслав код на пошту\r",
+              "  pm.test('Сервер вимагає 2FA', function () {\r",
+              "    pm.expect(data.twoFactorRequired).to.be.true;\r",
+              "  });\r",
+              "\r",
+              "  // У DEV середовищі ти повертаєш twoFactorCode в JSON\r",
+              "  if (data.twoFactorCode) {\r",
+              "    pm.environment.set('twoFactorCode', data.twoFactorCode);\r",
+              "    console.log('Saved 2FA code to env:', data.twoFactorCode);\r",
+              "  } else {\r",
+              "    console.warn('twoFactorCode не прийшов у відповіді (прод режим?)');\r",
+              "  }\r",
+              "}\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "id": "d8762fe0-7095-4331-ae41-b34631692477",
+            "exec": [
+              "console.log('Login with email:', pm.environment.get('email'));\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "id": "4f2c66d4-10c1-46d2-9e8e-f13cbf36db9b",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseURL}}/auth/login",
+          "host": [
+            "{{baseURL}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "login (2FA)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "id": "193fbb2f-d8f4-41e3-b980-b1c263a2fc47",
+            "exec": [
+              "console.log('Using 2FA code:', pm.environment.get('twoFactorCode'));\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "id": "1bb2ac21-787f-40b9-9a98-53376bced7d1",
+            "exec": [
+              "pm.test('2FA login повертає 200', function () {\r",
+              "  pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "const data = pm.response.json();\r",
+              "console.log('2FA login response:', data);\r",
+              "\r",
+              "pm.test('Повідомлення про успішний логін', function () {\r",
+              "  pm.expect(data.message).to.include('Login successful');\r",
+              "});\r",
+              "\r",
+              "pm.test('У відповіді є user', function () {\r",
+              "  pm.expect(data).to.have.property('user');\r",
+              "  pm.expect(data.user).to.have.property('email');\r",
+              "});\r",
+              "\r",
+              "// Можеш поставити собі \"флажок\", що юзер залогінений\r",
+              "pm.environment.set('lastLoginEmail', data.user.email);\r",
+              "pm.environment.set('isLoggedIn', 'true');\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "id": "b4d67630-86f6-4860-ba0e-f9c3b409c5b8",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"code\": \"{{twoFactorCode}}\"\r\n}\r\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseURL}}/auth/login/2fa",
+          "host": [
+            "{{baseURL}}"
+          ],
+          "path": [
+            "auth",
+            "login",
+            "2fa"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Enable 2FA",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "id": "90e91703-761d-4956-8c5e-b3892970396b",
+            "exec": [
+              "pm.test('Є email в env', function () {\r",
+              "  pm.expect(pm.environment.get('email')).to.be.a('string');\r",
+              "});\r",
+              "\r",
+              "pm.test('Є password в env', function () {\r",
+              "  pm.expect(pm.environment.get('password')).to.be.a('string');\r",
+              "});\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "id": "f6aaabe9-7394-4e7f-9de0-6bf2c01c4ce9",
+            "exec": [
+              "pm.test('Enable 2FA повертає 200', function () {\r",
+              "  pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "const data = pm.response.json();\r",
+              "console.log('Enable 2FA response:', data);\r",
+              "\r",
+              "pm.test('Є очікуване повідомлення', function () {\r",
+              "  pm.expect(data.message).to.include('enabled for your account');\r",
+              "});\r",
+              "\r",
+              "// Можна завести прапорець в env\r",
+              "pm.environment.set('twoFactorEnabled', 'true');\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "id": "7848d4ce-3332-413f-a953-26ee1552ffae",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\"\r\n}\r\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseURL}}/auth/2fa/enable",
+          "host": [
+            "{{baseURL}}"
+          ],
+          "path": [
+            "auth",
+            "2fa",
+            "enable"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Disable 2FA",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "id": "e5d7f66a-3167-4243-8445-796694d4dd4e",
+            "exec": [
+              "pm.test('Disable 2FA повертає 200', function () {\r",
+              "  pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "const data = pm.response.json();\r",
+              "console.log('Disable 2FA response:', data);\r",
+              "\r",
+              "pm.test('Є очікуване повідомлення', function () {\r",
+              "  pm.expect(data.message).to.include('disabled for your account');\r",
+              "});\r",
+              "\r",
+              "pm.environment.set('twoFactorEnabled', 'false');\r",
+              "// на всяк випадок чистимо код\r",
+              "pm.environment.unset('twoFactorCode');\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "id": "d4327750-0b17-422f-8718-708d2e840218",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\"\r\n}\r\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseURL}}/auth/2fa/disable",
+          "host": [
+            "{{baseURL}}"
+          ],
+          "path": [
+            "auth",
+            "2fa",
+            "disable"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Login logs",
+      "id": "633c1b16-8b41-4390-a2fb-c463b73857b7",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseURL}}/auth/login-attempts",
+          "host": [
+            "{{baseURL}}"
+          ],
+          "path": [
+            "auth",
+            "login-attempts"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "id": "b8dcc25e-851a-408b-a515-d0231833dfc3",
+      "key": "baseURL",
+      "value": "",
+      "type": "default"
+    }
+  ]
+}

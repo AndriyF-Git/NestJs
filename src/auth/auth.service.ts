@@ -228,10 +228,20 @@ export class AuthService {
       timestamp: now,
     });
 
-    return {
+    const appEnv = this.configService.get<string>('APP_ENV');
+
+    const response: any = {
       message: 'Two-factor authentication code has been sent to your email',
       twoFactorRequired: true,
     };
+
+    if (appEnv === 'development') {
+      // повертаємо код, щоб Postman міг його підхопити
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      response.twoFactorCode = code;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return response;
   }
 
   getLoginAttempts() {

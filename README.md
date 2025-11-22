@@ -1,5 +1,15 @@
 # Проєкт: Безпечна система управління обліковими записами (NestJS)
 
+## Зміст
+
+- [Опис](#опис)
+- [Функціональні вимоги](#функціональні-вимоги)
+- [Нефункціональні вимоги](#нефункціональні-вимоги)
+- [Навігація по проєкту](#навігація-по-проєкту)
+- [Postman-колекція та автотести](#postman-колекція-та-автотести)
+
+---
+
 ## Опис
 
 Сервіс реалізує базову систему керування обліковими записами користувачів на основі **NestJS** з акцентом на безпеку:
@@ -106,3 +116,45 @@
 - Конфіденційні налаштування (ключі, секрети, дані для підключення до e-mail та OAuth-провайдерів) зберігаються у змінних оточення (**.env**, не комітяться в репозиторій).
 - Логування спроб входу не має розкривати паролі або інші чутливі дані.
 
+---
+
+## Навігація по проєкту
+
+### Структура основних директорій
+
+```text
+src/
+  main.ts
+  app.module.ts
+
+  auth/
+    auth.module.ts
+    auth.controller.ts
+    auth.service.ts
+    dto/
+      register.dto.ts
+      login.dto.ts
+      two-factor-verify.dto.ts
+      two-factor-toggle.dto.ts
+
+  users/
+    users.module.ts
+    users.service.ts
+    user.entity.ts
+
+  mail/
+    mail.module.ts
+    mail.service.ts
+
+  security/
+    security.module.ts
+    captcha.service.ts
+    login-attempts.service.ts
+
+postman/
+  collections/
+    NestJS secure user service.postman_collection.json
+  environments/
+    NestJS_local.example.json   # шаблон env-файлу без секретів
+  globals/
+    ...

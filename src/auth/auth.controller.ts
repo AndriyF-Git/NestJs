@@ -4,6 +4,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { TwoFactorToggleDto } from './dto/two-factor-toggle.dto';
 import { TwoFactorVerifyDto } from './dto/two-factor-verify.dto';
+import { HttpCode, HttpStatus } from '@nestjs/common';
 
 @Controller('auth')
 export class AuthController {
@@ -30,20 +31,24 @@ export class AuthController {
   }
 
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
   @Post('2fa/enable')
+  @HttpCode(HttpStatus.OK)
   enableTwoFactor(@Body() dto: TwoFactorToggleDto) {
     return this.authService.enableTwoFactor(dto);
   }
 
   @Post('2fa/disable')
+  @HttpCode(HttpStatus.OK)
   disableTwoFactor(@Body() dto: TwoFactorToggleDto) {
     return this.authService.disableTwoFactor(dto);
   }
 
   @Post('login/2fa')
+  @HttpCode(HttpStatus.OK)
   verifyTwoFactor(@Body() dto: TwoFactorVerifyDto) {
     return this.authService.verifyTwoFactorLogin(dto);
   }
