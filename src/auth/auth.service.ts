@@ -3,6 +3,7 @@ import {
   BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
@@ -12,18 +13,8 @@ import { randomUUID } from 'crypto';
 import { LoginAttemptsService } from '../security/login-attempts.service';
 import { TwoFactorToggleDto } from './dto/two-factor-toggle.dto';
 import { TwoFactorVerifyDto } from './dto/two-factor-verify.dto';
-
-interface User {
-  id: number;
-  email: string;
-  passwordHash: string;
-  isActive: boolean;
-  failedLoginAttempts: number;
-  lockedUntil: Date | null;
-  twoFactorEnabled: boolean;
-  twoFactorLoginCode: string | null;
-  twoFactorLoginCodeExpiresAt: Date | null;
-}
+import { UsersService } from '../users/users.service';
+// import { User } from '../users/user.entity';
 
 interface ActivationToken {
   token: string;
@@ -34,20 +25,20 @@ interface ActivationToken {
 
 @Injectable()
 export class AuthService {
-  private users: User[] = [];
-  private nextId = 1;
-
   private activationTokens = new Map<string, ActivationToken>();
 
   constructor(
     private readonly captchaService: CaptchaService,
     private readonly mailService: MailService,
     private readonly loginAttemptsService: LoginAttemptsService,
+    private readonly usersService: UsersService,
+    private readonly configService: ConfigService,
   ) {}
 
   getCaptcha() {
     return this.captchaService.createSimpleCaptcha();
   }
+
   private generateTwoFactorCode(): string {
     return String(Math.floor(100000 + Math.random() * 900000));
   }
@@ -57,26 +48,18 @@ export class AuthService {
     this.captchaService.verifySimpleCaptcha(dto.captchaId, dto.captchaAnswer);
 
     // Перевірка унікальності email
-    const existing = this.users.find((u) => u.email === dto.email);
+    const existing = await this.usersService.findByEmail(dto.email);
     if (existing) {
       throw new BadRequestException('User with this email already exists');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
-    const user: User = {
-      id: this.nextId++,
+    const user = await this.usersService.createUser({
       email: dto.email,
       passwordHash,
       isActive: false,
-      failedLoginAttempts: 0,
-      lockedUntil: null,
-      twoFactorEnabled: false,
-      twoFactorLoginCode: null,
-      twoFactorLoginCodeExpiresAt: null,
-    };
-
-    this.users.push(user);
+    });
 
     // Генеруємо токен активації
     const token = randomUUID();
@@ -92,15 +75,25 @@ export class AuthService {
     // Надсилаємо лист
     await this.mailService.sendActivationEmail(user.email, token);
 
-    return {
+    const response: any = {
       id: user.id,
       email: user.email,
       message:
         'User registered. Please check your email to activate your account.',
     };
+
+    // Не попадає в продакш, але всеодно потім видалю токен з JSON після тестів
+    const appEnv = this.configService.get<string>('APP_ENV');
+    if (appEnv === 'development') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      response.activationToken = token;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return response;
   }
 
-  activateAccount(token: string) {
+  async activateAccount(token: string) {
     const entry = this.activationTokens.get(token);
 
     if (!entry) {
@@ -116,13 +109,13 @@ export class AuthService {
       throw new BadRequestException('Activation token has expired');
     }
 
-    const user = this.users.find((u) => u.id === entry.userId);
+    const user = await this.usersService.findById(entry.userId);
     if (!user) {
       this.activationTokens.delete(token);
       throw new BadRequestException('User for this token was not found');
     }
 
-    user.isActive = true;
+    await this.usersService.updateUser(user.id, { isActive: true });
     entry.used = true;
 
     return {
@@ -132,7 +125,7 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = this.users.find((u) => u.email === dto.email);
+    const user = await this.usersService.findByEmail(dto.email);
 
     const now = new Date();
     const lockDurationMinutes = 15;
@@ -150,7 +143,7 @@ export class AuthService {
 
     if (user.lockedUntil && user.lockedUntil.getTime() > now.getTime()) {
       this.loginAttemptsService.logAttempt({
-        email: dto.email,
+        email: user.email,
         success: false,
         timestamp: now,
       });
@@ -162,7 +155,7 @@ export class AuthService {
 
     if (!user.isActive) {
       this.loginAttemptsService.logAttempt({
-        email: dto.email,
+        email: user.email,
         success: false,
         timestamp: now,
       });
@@ -178,13 +171,12 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      user.failedLoginAttempts += 1;
+      const attempts = await this.usersService.incrementFailedAttempts(user.id);
 
-      if (user.failedLoginAttempts >= maxFailedAttempts) {
-        const lockedUntil = new Date(
-          now.getTime() + lockDurationMinutes * 60 * 1000,
-        );
-        user.lockedUntil = lockedUntil;
+      let lockedUntil = user.lockedUntil;
+      if (attempts >= maxFailedAttempts) {
+        lockedUntil = new Date(now.getTime() + lockDurationMinutes * 60 * 1000);
+        await this.usersService.updateUser(user.id, { lockedUntil });
       }
 
       this.loginAttemptsService.logAttempt({
@@ -197,8 +189,10 @@ export class AuthService {
     }
 
     // пароль вірний, обнуляємо лічильник
-    user.failedLoginAttempts = 0;
-    user.lockedUntil = null;
+    await this.usersService.updateUser(user.id, {
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+    });
 
     // Якщо 2FA вимкнена – логін як раніше
     if (!user.twoFactorEnabled) {
@@ -219,10 +213,11 @@ export class AuthService {
 
     // Якщо 2FA увімкнена, шлемо код на пошту і не логінимо одразу
     const code = this.generateTwoFactorCode();
-    user.twoFactorLoginCode = code;
-    user.twoFactorLoginCodeExpiresAt = new Date(
-      now.getTime() + 10 * 60 * 1000, // 10 хв
-    );
+
+    await this.usersService.updateUser(user.id, {
+      twoFactorLoginCode: code,
+      twoFactorLoginCodeExpiresAt: new Date(now.getTime() + 10 * 60 * 1000), // 10 хв
+    });
 
     await this.mailService.sendTwoFactorCode(user.email, code);
 
@@ -244,7 +239,7 @@ export class AuthService {
   }
 
   async enableTwoFactor(dto: TwoFactorToggleDto) {
-    const user = this.users.find((u) => u.email === dto.email);
+    const user = await this.usersService.findByEmail(dto.email);
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
     }
@@ -269,7 +264,7 @@ export class AuthService {
       );
     }
 
-    user.twoFactorEnabled = true;
+    await this.usersService.updateUser(user.id, { twoFactorEnabled: true });
 
     return {
       message: 'Two-factor authentication has been enabled for your account',
@@ -277,9 +272,15 @@ export class AuthService {
   }
 
   async disableTwoFactor(dto: TwoFactorToggleDto) {
-    const user = this.users.find((u) => u.email === dto.email);
+    const user = await this.usersService.findByEmail(dto.email);
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException(
+        'Account is not activated. Please check your email.',
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -294,17 +295,19 @@ export class AuthService {
       throw new BadRequestException('Two-factor authentication is not enabled');
     }
 
-    user.twoFactorEnabled = false;
-    user.twoFactorLoginCode = null;
-    user.twoFactorLoginCodeExpiresAt = null;
+    await this.usersService.updateUser(user.id, {
+      twoFactorEnabled: false,
+      twoFactorLoginCode: null,
+      twoFactorLoginCodeExpiresAt: null,
+    });
 
     return {
       message: 'Two-factor authentication has been disabled for your account',
     };
   }
 
-  verifyTwoFactorLogin(dto: TwoFactorVerifyDto) {
-    const user = this.users.find((u) => u.email === dto.email);
+  async verifyTwoFactorLogin(dto: TwoFactorVerifyDto) {
+    const user = await this.usersService.findByEmail(dto.email);
     const now = new Date();
 
     if (!user) {
@@ -320,8 +323,10 @@ export class AuthService {
       !user.twoFactorLoginCodeExpiresAt ||
       user.twoFactorLoginCodeExpiresAt.getTime() < now.getTime()
     ) {
-      user.twoFactorLoginCode = null;
-      user.twoFactorLoginCodeExpiresAt = null;
+      await this.usersService.updateUser(user.id, {
+        twoFactorLoginCode: null,
+        twoFactorLoginCodeExpiresAt: null,
+      });
       throw new UnauthorizedException('2FA code has expired or is invalid');
     }
 
@@ -330,8 +335,10 @@ export class AuthService {
     }
 
     // Код вірний – очищаємо його
-    user.twoFactorLoginCode = null;
-    user.twoFactorLoginCodeExpiresAt = null;
+    await this.usersService.updateUser(user.id, {
+      twoFactorLoginCode: null,
+      twoFactorLoginCodeExpiresAt: null,
+    });
 
     this.loginAttemptsService.logAttempt({
       email: user.email,
