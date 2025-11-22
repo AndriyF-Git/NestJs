@@ -1,10 +1,25 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { TwoFactorToggleDto } from './dto/two-factor-toggle.dto';
 import { TwoFactorVerifyDto } from './dto/two-factor-verify.dto';
 import { HttpCode, HttpStatus } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { Request } from 'express';
+
+interface GoogleUserPayload {
+  id: number;
+  email: string;
+}
 
 @Controller('auth')
 export class AuthController {
@@ -51,5 +66,19 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   verifyTwoFactor(@Body() dto: TwoFactorVerifyDto) {
     return this.authService.verifyTwoFactorLogin(dto);
+  }
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  googleAuth() {
+    // Нічого не робимо — Nest сам редіректить на Google
+  }
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  googleCallback(@Req() req: Request & { user: GoogleUserPayload }) {
+    return {
+      message: 'Login with Google successful',
+      user: req.user,
+    };
   }
 }

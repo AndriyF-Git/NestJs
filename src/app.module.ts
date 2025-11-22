@@ -15,7 +15,7 @@ import { MailModule } from './mail/mail.module';
       database: 'db.sqlite',
       autoLoadEntities: true,
       synchronize: true, // для розробки
-      logging: true, // можна включити, щоб бачити SQL
+      logging: false, // можна включити, щоб бачити SQL
     }),
     SecurityModule,
     MailModule,
