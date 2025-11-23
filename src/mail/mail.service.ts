@@ -58,4 +58,26 @@ export class MailService {
 
     console.log('2FA code sent to', email, '=>', code);
   }
+
+  async sendPasswordResetEmail(email: string, token: string) {
+    const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+    const resetLink = `${appUrl}/auth/reset-password?token=${token}`;
+
+    await this.transporter.sendMail({
+      to: email,
+      from: process.env.MAIL_FROM ?? 'no-reply@example.com',
+      subject: 'Відновлення пароля',
+      text: `Щоб відновити пароль, перейдіть за посиланням: ${resetLink}`,
+      html: `
+        <p>Вітаю! 👋</p>
+        <p>Ви (або хтось замість вас) запросили відновлення пароля.</p>
+        <p>Щоб задати новий пароль, перейдіть за посиланням:</p>
+        <p><a href="${resetLink}">${resetLink}</a></p>
+        <p>Посилання дійсне протягом 30 хвилин.</p>
+        <p>Якщо це були не ви – просто проігноруйте цей лист.</p>
+      `,
+    });
+
+    console.log('Password reset email sent to', email, '=>', resetLink);
+  }
 }

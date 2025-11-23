@@ -26,6 +26,7 @@ interface ActivationToken {
 @Injectable()
 export class AuthService {
   private activationTokens = new Map<string, ActivationToken>();
+  private readonly resetTokenTtlMinutes: number;
 
   constructor(
     private readonly captchaService: CaptchaService,
@@ -34,7 +35,12 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) {
+    this.resetTokenTtlMinutes = Number(
+      this.configService.get<string>('PASSWORD_RESET_TOKEN_TTL_MINUTES') ??
+        '30',
+    );
+  }
 
   getCaptcha() {
     return this.captchaService.createSimpleCaptcha();
@@ -372,6 +378,75 @@ export class AuthService {
         email: user.email,
       },
       accessToken: this.signToken({ id: user.id, email: user.email }),
+    };
+  }
+  async requestPasswordReset(email: string) {
+    const user = await this.usersService.findByEmail(email);
+
+    // Щоб не "палити" існування акаунта, можна завжди повертати success.
+    if (!user) {
+      console.log(`Password reset requested for non-existing email: ${email}`);
+      return {
+        message:
+          'If this email is registered, a password reset link has been sent.',
+      };
+    }
+
+    if (!user.isActive) {
+      throw new BadRequestException('Account is not activated');
+    }
+
+    const token = randomUUID();
+    const expiresAt = new Date(
+      Date.now() + this.resetTokenTtlMinutes * 60 * 1000,
+    );
+
+    await this.usersService.setPasswordResetToken(user.id, token, expiresAt);
+    await this.mailService.sendPasswordResetEmail(user.email, token);
+
+    return {
+      message:
+        'If this email is registered, a password reset link has been sent.',
+    };
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    const user = await this.usersService.findByResetPasswordToken(token);
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    if (
+      !user.resetPasswordExpires ||
+      user.resetPasswordExpires.getTime() < Date.now()
+    ) {
+      // Токен прострочений
+      await this.usersService.clearPasswordResetToken(user.id);
+      throw new BadRequestException('Reset token has expired');
+    }
+
+    // Додаткова перевірка політики пароля (на всякий випадок)
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
+    if (!passwordRegex.test(newPassword)) {
+      throw new BadRequestException(
+        'Password does not meet security requirements',
+      );
+    }
+
+    const saltRounds = 10;
+    const hash = await bcrypt.hash(newPassword, saltRounds);
+
+    await this.usersService.updatePassword(user.id, hash);
+    await this.usersService.clearPasswordResetToken(user.id);
+
+    // Можна також обнулити лічильник невдалих спроб
+    await this.usersService.resetFailedAttempts(user.id);
+
+    return {
+      message: 'Password has been successfully reset',
     };
   }
 }

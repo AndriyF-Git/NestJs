@@ -54,4 +54,30 @@ export class UsersService {
   async resetFailedAttempts(id: number) {
     await this.usersRepo.update(id, { failedLoginAttempts: 0 });
   }
+
+  async findByResetPasswordToken(token: string) {
+    return this.usersRepo.findOne({
+      where: { resetPasswordToken: token },
+    });
+  }
+
+  async setPasswordResetToken(userId: number, token: string, expiresAt: Date) {
+    await this.usersRepo.update(userId, {
+      resetPasswordToken: token,
+      resetPasswordExpires: expiresAt,
+    });
+  }
+
+  async updatePassword(userId: number, passwordHash: string) {
+    await this.usersRepo.update(userId, {
+      passwordHash,
+    });
+  }
+
+  async clearPasswordResetToken(userId: number) {
+    await this.usersRepo.update(userId, {
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
+    });
+  }
 }
