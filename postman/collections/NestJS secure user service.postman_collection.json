@@ -2,9 +2,7 @@
   "info": {
     "_postman_id": "ff65c463-615b-473e-9bc4-35c256904a6e",
     "name": "NestJS secure user service",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "44025195",
-    "_collection_link": "https://andriy-806718.postman.co/workspace/c24ab227-6bb7-4c14-89ed-8cfb6b7018ff/collection/44025195-ff65c463-615b-473e-9bc4-35c256904a6e?action=share&source=collection_link&creator=44025195"
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
@@ -50,16 +48,13 @@
                   "}\r",
                   ""
                 ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "type": "text/javascript"
               }
             }
           ],
           "id": "1773474a-af62-4408-aded-f6a2386eb43d",
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
               "raw": "{{baseURL}}/auth/captcha",
               "host": [
@@ -70,8 +65,7 @@
                 "captcha"
               ]
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "Register Copy",
@@ -91,9 +85,7 @@
                   "console.log('Using email for register:', email);\r",
                   ""
                 ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "type": "text/javascript"
               }
             },
             {
@@ -113,16 +105,13 @@
                   "}\r",
                   ""
                 ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "type": "text/javascript"
               }
             }
           ],
           "id": "5888503a-3ee4-49f3-8131-c94a81f6249f",
           "request": {
             "method": "POST",
-            "header": [],
             "body": {
               "mode": "raw",
               "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\",\r\n  \"captchaId\": \"{{captchaId}}\",\r\n  \"captchaAnswer\": {{captchaAnswer}}\r\n}\r\n",
@@ -142,8 +131,7 @@
                 "register"
               ]
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "Activation account token Copy",
@@ -161,16 +149,13 @@
                   "console.log('Activation response:', data);\r",
                   ""
                 ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "type": "text/javascript"
               }
             }
           ],
           "id": "38a6ac9c-7136-4236-aa0b-6fcd20116432",
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
               "raw": "{{baseURL}}/auth/activate?token={{activationToken}}",
               "host": [
@@ -187,8 +172,7 @@
                 }
               ]
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "login (post) Copy",
@@ -228,9 +212,7 @@
                   "}\r",
                   ""
                 ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "type": "text/javascript"
               }
             },
             {
@@ -241,16 +223,13 @@
                   "console.log('Login with email:', pm.environment.get('email'));\r",
                   ""
                 ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "type": "text/javascript"
               }
             }
           ],
           "id": "ec2c16a6-8d2b-42ba-b5a1-f39c18d1e1fe",
           "request": {
             "method": "POST",
-            "header": [],
             "body": {
               "mode": "raw",
               "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\"\r\n}",
@@ -270,15 +249,13 @@
                 "login"
               ]
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "Login logs Copy",
           "id": "d30f6803-8451-4959-8245-e66a91d0fe18",
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
               "raw": "{{baseURL}}/auth/login-attempts",
               "host": [
@@ -289,8 +266,7 @@
                 "login-attempts"
               ]
             }
-          },
-          "response": []
+          }
         }
       ],
       "id": "e0f4436b-1ce3-4529-9fde-4bf695ba5857",
@@ -316,9 +292,7 @@
                   "});\r",
                   ""
                 ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "type": "text/javascript"
               }
             },
             {
@@ -341,16 +315,13 @@
                   "pm.environment.set('twoFactorEnabled', 'true');\r",
                   ""
                 ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "type": "text/javascript"
               }
             }
           ],
           "id": "260f8ed3-e821-4f2e-8250-72713ed62d21",
           "request": {
             "method": "POST",
-            "header": [],
             "body": {
               "mode": "raw",
               "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\"\r\n}\r\n",
@@ -371,8 +342,7 @@
                 "enable"
               ]
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "login (post) Copy",
@@ -412,9 +382,7 @@
                   "}\r",
                   ""
                 ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "type": "text/javascript"
               }
             },
             {
@@ -425,16 +393,13 @@
                   "console.log('Login with email:', pm.environment.get('email'));\r",
                   ""
                 ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "type": "text/javascript"
               }
             }
           ],
           "id": "fec454cc-45c3-4c36-8e64-e53a5a9252cf",
           "request": {
             "method": "POST",
-            "header": [],
             "body": {
               "mode": "raw",
               "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\"\r\n}",
@@ -454,8 +419,7 @@
                 "login"
               ]
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "login (2FA) Copy",
@@ -468,9 +432,7 @@
                   "console.log('Using 2FA code:', pm.environment.get('twoFactorCode'));\r",
                   ""
                 ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "type": "text/javascript"
               }
             },
             {
@@ -499,16 +461,13 @@
                   "pm.environment.set('isLoggedIn', 'true');\r",
                   ""
                 ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "type": "text/javascript"
               }
             }
           ],
           "id": "db418a5a-6900-4a51-8045-e744e03fb150",
           "request": {
             "method": "POST",
-            "header": [],
             "body": {
               "mode": "raw",
               "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"code\": \"{{twoFactorCode}}\"\r\n}\r\n",
@@ -529,8 +488,7 @@
                 "2fa"
               ]
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "Disable 2FA Copy",
@@ -556,16 +514,13 @@
                   "pm.environment.unset('twoFactorCode');\r",
                   ""
                 ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "type": "text/javascript"
               }
             }
           ],
           "id": "04680949-5cb2-46a7-a547-31ad7af6a913",
           "request": {
             "method": "POST",
-            "header": [],
             "body": {
               "mode": "raw",
               "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\"\r\n}\r\n",
@@ -586,8 +541,7 @@
                 "disable"
               ]
             }
-          },
-          "response": []
+          }
         }
       ],
       "id": "1ef66d67-c60d-4279-8aa1-a74300403bec"
@@ -632,16 +586,13 @@
               "}\r",
               ""
             ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "type": "text/javascript"
           }
         }
       ],
       "id": "7e9ffbc7-6748-49bd-8fb4-f2334011cf88",
       "request": {
         "method": "GET",
-        "header": [],
         "url": {
           "raw": "{{baseURL}}/auth/captcha",
           "host": [
@@ -652,8 +603,7 @@
             "captcha"
           ]
         }
-      },
-      "response": []
+      }
     },
     {
       "name": "Register",
@@ -673,9 +623,7 @@
               "console.log('Using email for register:', email);\r",
               ""
             ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "type": "text/javascript"
           }
         },
         {
@@ -695,16 +643,13 @@
               "}\r",
               ""
             ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "type": "text/javascript"
           }
         }
       ],
       "id": "13589522-66f1-4da3-ba50-989011e7b4e3",
       "request": {
         "method": "POST",
-        "header": [],
         "body": {
           "mode": "raw",
           "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\",\r\n  \"captchaId\": \"{{captchaId}}\",\r\n  \"captchaAnswer\": {{captchaAnswer}}\r\n}\r\n",
@@ -724,8 +669,7 @@
             "register"
           ]
         }
-      },
-      "response": []
+      }
     },
     {
       "name": "Activation account token",
@@ -743,16 +687,13 @@
               "console.log('Activation response:', data);\r",
               ""
             ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "type": "text/javascript"
           }
         }
       ],
       "id": "96ef700f-7722-4dd6-bb92-4e780545dd6d",
       "request": {
         "method": "GET",
-        "header": [],
         "url": {
           "raw": "{{baseURL}}/auth/activate?token={{activationToken}}",
           "host": [
@@ -769,8 +710,7 @@
             }
           ]
         }
-      },
-      "response": []
+      }
     },
     {
       "name": "login (post)",
@@ -782,6 +722,16 @@
             "exec": [
               "pm.test('Login повертає 200', function () {\r",
               "  pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Save accessToken to environment\", function () {\r",
+              "  const jsonData = pm.response.json();\r",
+              "  if (jsonData && jsonData.accessToken) {\r",
+              "    pm.environment.set(\"accessToken\", jsonData.accessToken);\r",
+              "    console.log(\"Saved accessToken:\", jsonData.accessToken);\r",
+              "  } else {\r",
+              "    console.warn(\"No accessToken found in response\");\r",
+              "  }\r",
               "});\r",
               "\r",
               "const data = pm.response.json();\r",
@@ -810,9 +760,7 @@
               "}\r",
               ""
             ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "type": "text/javascript"
           }
         },
         {
@@ -823,19 +771,16 @@
               "console.log('Login with email:', pm.environment.get('email'));\r",
               ""
             ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "type": "text/javascript"
           }
         }
       ],
       "id": "4f2c66d4-10c1-46d2-9e8e-f13cbf36db9b",
       "request": {
         "method": "POST",
-        "header": [],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\"\r\n}",
+          "raw": "",
           "options": {
             "raw": {
               "language": "json"
@@ -852,8 +797,7 @@
             "login"
           ]
         }
-      },
-      "response": []
+      }
     },
     {
       "name": "login (2FA)",
@@ -866,9 +810,7 @@
               "console.log('Using 2FA code:', pm.environment.get('twoFactorCode'));\r",
               ""
             ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "type": "text/javascript"
           }
         },
         {
@@ -897,16 +839,13 @@
               "pm.environment.set('isLoggedIn', 'true');\r",
               ""
             ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "type": "text/javascript"
           }
         }
       ],
       "id": "b4d67630-86f6-4860-ba0e-f9c3b409c5b8",
       "request": {
         "method": "POST",
-        "header": [],
         "body": {
           "mode": "raw",
           "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"code\": \"{{twoFactorCode}}\"\r\n}\r\n",
@@ -927,8 +866,7 @@
             "2fa"
           ]
         }
-      },
-      "response": []
+      }
     },
     {
       "name": "Enable 2FA",
@@ -947,9 +885,7 @@
               "});\r",
               ""
             ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "type": "text/javascript"
           }
         },
         {
@@ -972,16 +908,13 @@
               "pm.environment.set('twoFactorEnabled', 'true');\r",
               ""
             ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "type": "text/javascript"
           }
         }
       ],
       "id": "7848d4ce-3332-413f-a953-26ee1552ffae",
       "request": {
         "method": "POST",
-        "header": [],
         "body": {
           "mode": "raw",
           "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\"\r\n}\r\n",
@@ -1002,8 +935,7 @@
             "enable"
           ]
         }
-      },
-      "response": []
+      }
     },
     {
       "name": "Disable 2FA",
@@ -1029,16 +961,13 @@
               "pm.environment.unset('twoFactorCode');\r",
               ""
             ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "type": "text/javascript"
           }
         }
       ],
       "id": "d4327750-0b17-422f-8718-708d2e840218",
       "request": {
         "method": "POST",
-        "header": [],
         "body": {
           "mode": "raw",
           "raw": "{\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"{{password}}\"\r\n}\r\n",
@@ -1059,15 +988,13 @@
             "disable"
           ]
         }
-      },
-      "response": []
+      }
     },
     {
       "name": "Login logs",
       "id": "633c1b16-8b41-4390-a2fb-c463b73857b7",
       "request": {
         "method": "GET",
-        "header": [],
         "url": {
           "raw": "{{baseURL}}/auth/login-attempts",
           "host": [
@@ -1078,13 +1005,81 @@
             "login-attempts"
           ]
         }
-      },
-      "response": []
+      }
+    },
+    {
+      "name": "Auth me with JWT",
+      "id": "bbd5473c-25a6-4734-822b-230180cc28f7",
+      "request": {
+        "auth": {
+          "type": "jwt",
+          "jwt": [
+            {
+              "key": "header",
+              "value": "{}",
+              "type": "string"
+            },
+            {
+              "key": "secret",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "key": "payload",
+              "value": "{}",
+              "type": "string"
+            },
+            {
+              "key": "algorithm",
+              "value": "HS256",
+              "type": "string"
+            },
+            {
+              "key": "isSecretBase64Encoded",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "key": "addTokenTo",
+              "value": "header",
+              "type": "string"
+            },
+            {
+              "key": "headerPrefix",
+              "value": "Bearer",
+              "type": "string"
+            },
+            {
+              "key": "queryParamKey",
+              "value": "token",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseURL}}/auth/me",
+          "host": [
+            "{{baseURL}}"
+          ],
+          "path": [
+            "auth",
+            "me"
+          ]
+        }
+      }
     }
   ],
   "variable": [
     {
-      "id": "b8dcc25e-851a-408b-a515-d0231833dfc3",
+      "id": "aee8cd2e-4a42-4b16-b26d-f13dba30f08c",
       "key": "baseURL",
       "value": "",
       "type": "default"

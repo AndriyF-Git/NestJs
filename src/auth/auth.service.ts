@@ -14,7 +14,7 @@ import { LoginAttemptsService } from '../security/login-attempts.service';
 import { TwoFactorToggleDto } from './dto/two-factor-toggle.dto';
 import { TwoFactorVerifyDto } from './dto/two-factor-verify.dto';
 import { UsersService } from '../users/users.service';
-// import { User } from '../users/user.entity';
+import { JwtService } from '@nestjs/jwt';
 
 interface ActivationToken {
   token: string;
@@ -33,6 +33,7 @@ export class AuthService {
     private readonly loginAttemptsService: LoginAttemptsService,
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
+    private readonly jwtService: JwtService,
   ) {}
 
   getCaptcha() {
@@ -41,6 +42,13 @@ export class AuthService {
 
   private generateTwoFactorCode(): string {
     return String(Math.floor(100000 + Math.random() * 900000));
+  }
+
+  signToken(user: { id: number; email: string }) {
+    return this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+    });
   }
 
   async register(dto: RegisterDto) {
@@ -208,6 +216,7 @@ export class AuthService {
           id: user.id,
           email: user.email,
         },
+        accessToken: this.signToken({ id: user.id, email: user.email }),
       };
     }
 
@@ -362,6 +371,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
       },
+      accessToken: this.signToken({ id: user.id, email: user.email }),
     };
   }
 }

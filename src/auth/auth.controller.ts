@@ -14,11 +14,18 @@ import { TwoFactorToggleDto } from './dto/two-factor-toggle.dto';
 import { TwoFactorVerifyDto } from './dto/two-factor-verify.dto';
 import { HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from './jwt-auth.guard';
 import { Request } from 'express';
 
 interface GoogleUserPayload {
   id: number;
   email: string;
+}
+
+interface JwtUserPayload {
+  id: number;
+  email: string;
+  twoFactorEnabled: boolean;
 }
 
 @Controller('auth')
@@ -76,9 +83,22 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   googleCallback(@Req() req: Request & { user: GoogleUserPayload }) {
+    const accessToken = this.authService.signToken(req.user);
+
     return {
       message: 'Login with Google successful',
       user: req.user,
+      accessToken,
+    };
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  getMe(@Req() req: Request & { user: JwtUserPayload }) {
+    return {
+      id: req.user.id,
+      email: req.user.email,
+      twoFactorEnabled: req.user.twoFactorEnabled,
     };
   }
 }
