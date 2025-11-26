@@ -1075,11 +1075,175 @@
           ]
         }
       }
+    },
+    {
+      "name": "Reset Pass Request",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "id": "1637b363-a9f4-4d5f-b8d1-7e1447c058cd",
+            "exec": [
+              "console.log('=== PRE-REQUEST SCRIPT (force JSON body) ===');\r",
+              "\r",
+              "const jsonBody = {\r",
+              "  email: 'test1763815543758_984868@example.com', // <-- сюди постав будь-який свій e-mail\r",
+              "};\r",
+              "\r",
+              "// Жорстко задаємо тіло запиту як raw JSON\r",
+              "pm.request.body = {\r",
+              "  mode: 'raw',\r",
+              "  raw: JSON.stringify(jsonBody),\r",
+              "  options: {\r",
+              "    raw: {\r",
+              "      language: 'json',\r",
+              "    },\r",
+              "  },\r",
+              "};\r",
+              "\r",
+              "// Гарантовано ставимо Content-Type\r",
+              "pm.request.headers.upsert({\r",
+              "  key: 'Content-Type',\r",
+              "  value: 'application/json',\r",
+              "});\r",
+              "\r",
+              "console.log('Body set to:', pm.request.body.raw);\r",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "id": "8cc59b3c-c839-44db-b602-61ce99b101dc",
+            "exec": [
+              "console.log('=== TESTS SCRIPT ===');\r",
+              "console.log('Response status:', pm.response.code);\r",
+              "console.log('Response body (text):', pm.response.text());\r",
+              "\r",
+              "try {\r",
+              "  const json = pm.response.json();\r",
+              "  console.log('Response body (JSON):', json);\r",
+              "} catch (e) {\r",
+              "  console.log('Response is not valid JSON:', e);\r",
+              "}\r",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "id": "939b227b-2611-4a14-9dec-0f508f4e5706",
+      "request": {
+        "method": "POST",
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"email\": \"test1763815798685_205443@example.com\"\r\n}\r\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/auth/forgot-password",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "auth",
+            "forgot-password"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Reset Password",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "id": "ac0eed7f-d133-4f6d-97bb-376ff71a6ab1",
+            "exec": [
+              "console.log('=== PRE-REQUEST /auth/reset-password ===');\r",
+              "\r",
+              "// 🔧 Налаштування — тут вписуєш свої значення:\r",
+              "const token = '71d2c16b-6f63-4aa3-b4e8-af1b3b271db7';\r",
+              "const newPassword = 'NewPdjxyassw0rd!'; // має відповідати політиці пароля\r",
+              "\r",
+              "// Формуємо тіло запиту\r",
+              "const jsonBody = {\r",
+              "  token,\r",
+              "  newPassword,\r",
+              "};\r",
+              "\r",
+              "// Жорстко задаємо body як raw JSON\r",
+              "pm.request.body = {\r",
+              "  mode: 'raw',\r",
+              "  raw: JSON.stringify(jsonBody),\r",
+              "  options: {\r",
+              "    raw: {\r",
+              "      language: 'json',\r",
+              "    },\r",
+              "  },\r",
+              "};\r",
+              "\r",
+              "// Гарантовано ставимо Content-Type: application/json\r",
+              "pm.request.headers.upsert({\r",
+              "  key: 'Content-Type',\r",
+              "  value: 'application/json',\r",
+              "});\r",
+              "\r",
+              "console.log('Request body set to:', pm.request.body.raw);\r",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "id": "ee94cf6c-56b5-47ba-962c-a066e04dbb83",
+            "exec": [
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "id": "aedbec4c-af0c-45fa-872d-4902b21b5e97",
+      "request": {
+        "method": "POST",
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/auth/reset-password",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "auth",
+            "reset-password"
+          ]
+        }
+      }
     }
   ],
   "variable": [
     {
-      "id": "aee8cd2e-4a42-4b16-b26d-f13dba30f08c",
+      "id": "2b7c9eda-60ba-44de-a17c-35b157e671cf",
       "key": "baseURL",
       "value": "",
       "type": "default"

@@ -383,7 +383,7 @@ export class AuthService {
   async requestPasswordReset(email: string) {
     const user = await this.usersService.findByEmail(email);
 
-    // Щоб не "палити" існування акаунта, можна завжди повертати success.
+    // Щоб не "палити" існування акаунта, завжди повертаємо success
     if (!user) {
       console.log(`Password reset requested for non-existing email: ${email}`);
       return {
@@ -404,10 +404,21 @@ export class AuthService {
     await this.usersService.setPasswordResetToken(user.id, token, expiresAt);
     await this.mailService.sendPasswordResetEmail(user.email, token);
 
-    return {
+    const appEnv = this.configService.get<string>('APP_ENV');
+
+    const response: any = {
       message:
         'If this email is registered, a password reset link has been sent.',
     };
+
+    // В dev повертаємо токен, щоб зручно тестити через Postman
+    if (appEnv === 'development') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      response.token = token;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return response;
   }
 
   async resetPassword(token: string, newPassword: string) {
