@@ -107,6 +107,7 @@ export class AuthController {
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return this.authService.requestPasswordReset(dto.email);
   }
 
