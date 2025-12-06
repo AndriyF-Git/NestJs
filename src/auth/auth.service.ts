@@ -42,10 +42,6 @@ export class AuthService {
     );
   }
 
-  getCaptcha() {
-    return this.captchaService.createSimpleCaptcha();
-  }
-
   private generateTwoFactorCode(): string {
     return String(Math.floor(100000 + Math.random() * 900000));
   }
@@ -58,9 +54,11 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto) {
-    // Перевірка CAPTCHA
-    this.captchaService.verifySimpleCaptcha(dto.captchaId, dto.captchaAnswer);
+    if (!dto.recaptchaToken) {
+      throw new BadRequestException('reCAPTCHA token is required');
+    }
 
+    await this.captchaService.verifyRecaptchaToken(dto.recaptchaToken);
     // Перевірка унікальності email
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) {

@@ -1,8 +1,10 @@
-// client/src/pages/RegisterPage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { register } from '../api/auth';
+
+const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -10,6 +12,8 @@ const RegisterPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordRepeat, setPasswordRepeat] = useState('');
+
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,9 +29,18 @@ const RegisterPage: React.FC = () => {
       return;
     }
 
+    if (!recaptchaToken) {
+      setError('Please complete the captcha');
+      return;
+    }
+
     setLoading(true);
     try {
-      const data = await register({ email, password });
+      const data = await register({
+        email,
+        password,
+        recaptchaToken, // відправляємо токен на бек
+      });
       setSuccess('Registration successful. Check your email or go to login.');
       console.log('Register response:', data);
     } catch (err: unknown) {
@@ -45,6 +58,17 @@ const RegisterPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // 🛡 Якщо ключа немає — не рендеримо капчу, а показуємо зрозумілий текст
+  if (!siteKey) {
+    console.error('VITE_RECAPTCHA_SITE_KEY is not set');
+    return (
+      <div style={{ maxWidth: 400, margin: '40px auto', color: 'red' }}>
+        reCAPTCHA is not configured. Please set VITE_RECAPTCHA_SITE_KEY in your
+        client .env file and restart the dev server.
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 400, margin: '40px auto' }}>
@@ -93,13 +117,22 @@ const RegisterPage: React.FC = () => {
           </label>
         </div>
 
-        {error && <div style={{ color: 'red', marginBottom: 12 }}>{error}</div>}
+        <div style={{ marginBottom: 12 }}>
+          <ReCAPTCHA
+            sitekey={siteKey}
+            onChange={(value) => setRecaptchaToken(value)}
+          />
+        </div>
+
+        {error && (
+          <div style={{ color: 'red', marginBottom: 12 }}>{error}</div>
+        )}
 
         {success && (
           <div style={{ color: 'green', marginBottom: 12 }}>{success}</div>
         )}
 
-        <button type="submit" disabled={loading}>
+        <button type="submit" disabled={loading || !recaptchaToken}>
           {loading ? 'Registering...' : 'Register'}
         </button>
       </form>

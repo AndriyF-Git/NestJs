@@ -8,6 +8,7 @@ export interface LoginDto {
 export interface RegisterDto {
   email: string;
   password: string;
+  recaptchaToken: string;
 }
 
 export async function login(data: LoginDto) {

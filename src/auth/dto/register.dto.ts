@@ -1,5 +1,4 @@
-import { IsEmail, IsInt, IsString, Matches } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsEmail, IsString, Matches } from 'class-validator';
 
 export class RegisterDto {
   @IsEmail()
@@ -13,9 +12,5 @@ export class RegisterDto {
   password: string;
 
   @IsString()
-  captchaId: string;
-
-  @Type(() => Number)
-  @IsInt()
-  captchaAnswer: number;
+  recaptchaToken: string;
 }

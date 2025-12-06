@@ -1,49 +1,45 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { randomUUID } from 'crypto';
-
-interface CaptchaEntry {
-  id: string;
-  question: string;
-  answer: number;
-}
+import { ConfigService } from '@nestjs/config';
+// import { randomUUID } from 'crypto';
 
 @Injectable()
 export class CaptchaService {
-  private captchas = new Map<string, CaptchaEntry>();
+  constructor(private readonly configService: ConfigService) {}
 
-  createSimpleCaptcha() {
-    const a = Math.floor(Math.random() * 10) + 1; // 1–10
-    const b = Math.floor(Math.random() * 10) + 1;
+  async verifyRecaptchaToken(token: string | undefined) {
+    if (!token) {
+      throw new BadRequestException('reCAPTCHA token is missing');
+    }
 
-    const id = randomUUID();
-    const question = `Скільки буде ${a} + ${b}?`;
-    const answer = a + b;
+    const secret = this.configService.get<string>('RECAPTCHA_SECRET_KEY');
+    if (!secret) {
+      throw new Error('RECAPTCHA_SECRET_KEY is not configured');
+    }
 
-    const entry: CaptchaEntry = { id, question, answer };
-    this.captchas.set(id, entry);
+    // якщо в тебе Node 18+ – можна використовувати глобальний fetch
+    const params = new URLSearchParams();
+    params.append('secret', secret);
+    params.append('response', token);
 
-    return {
-      captchaId: id,
-      question,
+    const response = await fetch(
+      'https://www.google.com/recaptcha/api/siteverify',
+      {
+        method: 'POST',
+        body: params,
+      },
+    );
+
+    const data = (await response.json()) as {
+      success: boolean;
+      score?: number;
+      'error-codes'?: string[];
     };
-  }
 
-  verifySimpleCaptcha(captchaId: string, captchaAnswer: number) {
-    const entry = this.captchas.get(captchaId);
-
-    if (!entry) {
-      throw new BadRequestException('CAPTCHA has expired or is invalid');
+    if (!data.success) {
+      throw new BadRequestException('Failed to verify reCAPTCHA token');
     }
 
-    const isCorrect = entry.answer === captchaAnswer;
-
-    this.captchas.delete(captchaId);
-
-    if (!isCorrect) {
-      throw new BadRequestException('CAPTCHA answer is incorrect');
-    }
+    // Якщо буде юзатись reCAPTCHA v3, можна ще порог по score перевіряти
+    // if (data.score !== undefined && data.score < 0.5) { ... }
   }
-
-  // Потім тут зʼявиться метод під Google reCAPTCHA
-  // async verifyRecaptchaToken(token: string) { ... }
 }

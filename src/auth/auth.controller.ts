@@ -34,11 +34,6 @@ interface JwtUserPayload {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Get('captcha')
-  getCaptcha() {
-    return this.authService.getCaptcha();
-  }
-
   @Get('activate')
   activate(@Query('token') token: string) {
     return this.authService.activateAccount(token);
