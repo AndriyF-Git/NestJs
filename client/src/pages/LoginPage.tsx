@@ -1,7 +1,7 @@
 // client/src/pages/LoginPage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios'
+import axios from 'axios';
 import { login } from '../api/auth';
 
 const LoginPage: React.FC = () => {
@@ -86,6 +86,13 @@ const LoginPage: React.FC = () => {
         Don&apos;t have an account?{' '}
         <button type="button" onClick={() => navigate('/register')}>
           Go to register
+        </button>
+      </p>
+
+      <p style={{ marginTop: 16 }}>
+        Forgot your password?{' '}
+        <button type="button" onClick={() => navigate('/forgot-password')}>
+          Reset it
         </button>
       </p>
     </div>

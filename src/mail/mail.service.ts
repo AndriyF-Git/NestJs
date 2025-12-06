@@ -9,7 +9,7 @@ export class MailService {
     this.transporter = nodemailer.createTransport({
       host: process.env.MAIL_HOST,
       port: Number(process.env.MAIL_PORT),
-      secure: false, // true зазвичай тільки для 465
+      secure: false,
       auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS,
@@ -18,6 +18,7 @@ export class MailService {
   }
 
   async sendActivationEmail(email: string, token: string) {
+    // бекендовий URL (де живе /auth/activate)
     const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
     const activationLink = `${appUrl}/auth/activate?token=${token}`;
 
@@ -41,9 +42,9 @@ export class MailService {
       `,
     });
 
-    // Лог для себе
     console.log('Activation email sent to', email, '=>', activationLink);
   }
+
   async sendTwoFactorCode(email: string, code: string) {
     await this.transporter.sendMail({
       from: process.env.MAIL_FROM,
@@ -60,8 +61,9 @@ export class MailService {
   }
 
   async sendPasswordResetEmail(email: string, token: string) {
-    const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
-    const resetLink = `${appUrl}/auth/reset-password?token=${token}`;
+    // фронтовий URL (де живе React-сторінка /reset-password)
+    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173';
+    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
 
     await this.transporter.sendMail({
       to: email,

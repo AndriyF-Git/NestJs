@@ -1,18 +1,29 @@
-// client/src/App.tsx
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import MePage from './pages/MePage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 const App: React.FC = () => {
+  const isAuthenticated = !!localStorage.getItem('accessToken');
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
-      {/* далі додаси /me, /2fa, /forgot-password, /reset-password, etc. */}
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-      {/* якщо шлях не знайдено – редірект на /login */}
+      <Route
+        path="/me"
+        element={
+          isAuthenticated ? <MePage /> : <Navigate to="/login" replace />
+        }
+      />
+
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
