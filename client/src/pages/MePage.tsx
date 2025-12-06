@@ -1,19 +1,30 @@
 import React, { useEffect, useState } from 'react';
+import { enableTwoFactor, disableTwoFactor } from '../api/auth';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import api from '../api/api';
+import { useAuth } from '../context/AuthContext';
 
 interface MeResponse {
   id: string;
   email: string;
   isActive?: boolean;
-  isTwoFactorEnabled?: boolean;
-  // додай сюди ще поля, які реально повертає твій /auth/me
+  twoFactorEnabled?: boolean;
 }
 
 const MePage: React.FC = () => {
+  const navigate = useNavigate();
+
   const [user, setUser] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { logout } = useAuth();
+
+  // стани для 2FA
+  const [passwordFor2fa, setPasswordFor2fa] = useState('');
+  const [loading2fa, setLoading2fa] = useState(false);
+  const [message2fa, setMessage2fa] = useState<string | null>(null);
+  const [error2fa, setError2fa] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMe = async () => {
@@ -38,6 +49,50 @@ const MePage: React.FC = () => {
     fetchMe();
   }, []);
 
+  const handleToggle2fa = async () => {
+    if (!user) return;
+
+    setError2fa(null);
+    setMessage2fa(null);
+    setLoading2fa(true);
+
+    try {
+      const payload = {
+        email: user.email,
+        password: passwordFor2fa,
+      };
+
+      const data = user.twoFactorEnabled
+        ? await disableTwoFactor(payload)
+        : await enableTwoFactor(payload);
+
+      setMessage2fa(
+        (data && (data.message as string | undefined)) ||
+          '2FA settings updated successfully',
+      );
+
+      // оновлюємо локальний стан, щоб відобразити новий статус
+      setUser({
+        ...user,
+        twoFactorEnabled: !user.twoFactorEnabled,
+      });
+
+      setPasswordFor2fa('');
+    } catch (err: unknown) {
+      console.error(err);
+      if (axios.isAxiosError(err)) {
+        const msg =
+          (err.response?.data as { message?: string })?.message ||
+          'Failed to update 2FA settings';
+        setError2fa(msg);
+      } else {
+        setError2fa('Unexpected error');
+      }
+    } finally {
+      setLoading2fa(false);
+    }
+  };
+
   if (loading) {
     return <div style={{ padding: 20 }}>Loading...</div>;
   }
@@ -53,22 +108,61 @@ const MePage: React.FC = () => {
   return (
     <div style={{ maxWidth: 500, margin: '40px auto' }}>
       <h1>My profile</h1>
-      <p><strong>ID:</strong> {user.id}</p>
-      <p><strong>Email:</strong> {user.email}</p>
+      <p>
+        <strong>ID:</strong> {user.id}
+      </p>
+      <p>
+        <strong>Email:</strong> {user.email}
+      </p>
       {user.isActive !== undefined && (
-        <p><strong>Active:</strong> {user.isActive ? 'Yes' : 'No'}</p>
-      )}
-      {user.isTwoFactorEnabled !== undefined && (
         <p>
-          <strong>2FA:</strong> {user.isTwoFactorEnabled ? 'Enabled' : 'Disabled'}
+          <strong>Active:</strong> {user.isActive ? 'Yes' : 'No'}
         </p>
       )}
+      {user.twoFactorEnabled !== undefined && (
+        <p>
+          <strong>2FA:</strong>{' '}
+          {user.twoFactorEnabled ? 'Enabled' : 'Disabled'}
+        </p>
+      )}
+
+      {/* Блок управління 2FA */}
+      <div
+        style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #ddd' }}
+      >
+        <h3>{user.twoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA'}</h3>
+        <p>Enter your password to confirm this action:</p>
+        <input
+          type="password"
+          value={passwordFor2fa}
+          onChange={(e) => setPasswordFor2fa(e.target.value)}
+          style={{ width: '100%', marginBottom: 8 }}
+        />
+
+        {error2fa && (
+          <div style={{ color: 'red', marginBottom: 8 }}>{error2fa}</div>
+        )}
+        {message2fa && (
+          <div style={{ color: 'green', marginBottom: 8 }}>{message2fa}</div>
+        )}
+
+        <button
+          onClick={handleToggle2fa}
+          disabled={loading2fa || !passwordFor2fa}
+        >
+          {loading2fa
+            ? 'Processing...'
+            : user.twoFactorEnabled
+              ? 'Disable 2FA'
+              : 'Enable 2FA'}
+        </button>
+      </div>
 
       <button
         style={{ marginTop: 20 }}
         onClick={() => {
-          localStorage.removeItem('accessToken');
-          window.location.href = '/login';
+          logout();
+          navigate('/login');
         }}
       >
         Logout

@@ -1,11 +1,12 @@
-// client/src/pages/LoginPage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { login } from '../api/auth';
+import { useAuth } from '../context/AuthContext';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const { login: authLogin } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,10 +23,24 @@ const LoginPage: React.FC = () => {
       const data = await login({ email, password });
 
       if (data.accessToken) {
-        localStorage.setItem('accessToken', data.accessToken);
+        authLogin(data.accessToken);
+        navigate('/me');
+        return;
       }
 
-      navigate('/me');
+      if (data.twoFactorRequired) {
+        // збережемо email, щоб не просити ще раз
+        localStorage.setItem('twoFactorEmail', email);
+
+        // (опційно) покажемо код в dev середовищі, якщо бек повертає twoFactorCode
+        if (data.twoFactorCode) {
+          console.log('2FA DEV CODE:', data.twoFactorCode);
+        }
+
+        navigate('/login/2fa');
+        return;
+      }
+      setError('Unexpected login response');
     } catch (err: unknown) {
       console.error(err);
 

@@ -5,13 +5,16 @@ import RegisterPage from './pages/RegisterPage';
 import MePage from './pages/MePage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import TwoFactorPage from './pages/TwoFaPage';
+import { useAuth } from './context/AuthContext';
 
 const App: React.FC = () => {
-  const isAuthenticated = !!localStorage.getItem('accessToken');
+  const { isAuthenticated } = useAuth();
 
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/login/2fa" element={<TwoFactorPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
