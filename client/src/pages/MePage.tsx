@@ -31,8 +31,21 @@ const MePage: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [loadingChangePassword, setLoadingChangePassword] = useState(false);
-  const [errorChangePassword, setErrorChangePassword] = useState<string | null>(null);
-  const [messageChangePassword, setMessageChangePassword] = useState<string | null>(null);
+  const [errorChangePassword, setErrorChangePassword] = useState<string | null>(
+    null,
+  );
+  const [messageChangePassword, setMessageChangePassword] = useState<
+    string | null
+  >(null);
+
+  // стани для зміни email
+  const [newEmail, setNewEmail] = useState('');
+  const [passwordForEmailChange, setPasswordForEmailChange] = useState('');
+  const [loadingChangeEmail, setLoadingChangeEmail] = useState(false);
+  const [errorChangeEmail, setErrorChangeEmail] = useState<string | null>(null);
+  const [messageChangeEmail, setMessageChangeEmail] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     const fetchMe = async () => {
@@ -127,7 +140,8 @@ const MePage: React.FC = () => {
     } catch (err: unknown) {
       console.error(err);
       if (axios.isAxiosError(err)) {
-        const raw = (err.response?.data as { message?: string | string[] })?.message;
+        const raw = (err.response?.data as { message?: string | string[] })
+          ?.message;
         let msg: string;
 
         if (Array.isArray(raw)) {
@@ -144,6 +158,54 @@ const MePage: React.FC = () => {
       }
     } finally {
       setLoadingChangePassword(false);
+    }
+  };
+
+  const handleChangeEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setErrorChangeEmail(null);
+    setMessageChangeEmail(null);
+
+    if (!newEmail || !passwordForEmailChange) {
+      setErrorChangeEmail('Введіть новий e-mail і пароль');
+      return;
+    }
+
+    try {
+      setLoadingChangeEmail(true);
+
+      await api.post('/auth/change-email/request', {
+        newEmail,
+        password: passwordForEmailChange,
+      });
+
+      setMessageChangeEmail(
+        'Ми відправили лист із підтвердженням на нову адресу. Перевірте пошту.',
+      );
+      setPasswordForEmailChange('');
+      // Можна не міняти user.email поки не підтверджено
+    } catch (err: unknown) {
+      console.error(err);
+      if (axios.isAxiosError(err)) {
+        const raw = (err.response?.data as { message?: string | string[] })
+          ?.message;
+        let msg: string;
+
+        if (Array.isArray(raw)) {
+          msg = raw.join(', ');
+        } else if (typeof raw === 'string') {
+          msg = raw;
+        } else {
+          msg = 'Не вдалося запросити зміну e-mail';
+        }
+
+        setErrorChangeEmail(msg);
+      } else {
+        setErrorChangeEmail('Unexpected error');
+      }
+    } finally {
+      setLoadingChangeEmail(false);
     }
   };
 
@@ -175,8 +237,7 @@ const MePage: React.FC = () => {
       )}
       {user.twoFactorEnabled !== undefined && (
         <p>
-          <strong>2FA:</strong>{' '}
-          {user.twoFactorEnabled ? 'Enabled' : 'Disabled'}
+          <strong>2FA:</strong> {user.twoFactorEnabled ? 'Enabled' : 'Disabled'}
         </p>
       )}
 
@@ -270,6 +331,58 @@ const MePage: React.FC = () => {
 
           <button type="submit" disabled={loadingChangePassword}>
             {loadingChangePassword ? 'Changing...' : 'Change password'}
+          </button>
+        </form>
+      </div>
+      {/* Блок зміни e-mail */}
+      <div
+        style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #ddd' }}
+      >
+        <h3>Change email</h3>
+        <p>
+          Current: <strong>{user.email}</strong>
+        </p>
+
+        <form onSubmit={handleChangeEmail}>
+          <div style={{ marginBottom: 8 }}>
+            <label>
+              New email
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                style={{ width: '100%', marginTop: 4 }}
+                required
+              />
+            </label>
+          </div>
+
+          <div style={{ marginBottom: 8 }}>
+            <label>
+              Password (for confirmation)
+              <input
+                type="password"
+                value={passwordForEmailChange}
+                onChange={(e) => setPasswordForEmailChange(e.target.value)}
+                style={{ width: '100%', marginTop: 4 }}
+                required
+              />
+            </label>
+          </div>
+
+          {errorChangeEmail && (
+            <div style={{ color: 'red', marginBottom: 8 }}>
+              {errorChangeEmail}
+            </div>
+          )}
+          {messageChangeEmail && (
+            <div style={{ color: 'green', marginBottom: 8 }}>
+              {messageChangeEmail}
+            </div>
+          )}
+
+          <button type="submit" disabled={loadingChangeEmail}>
+            {loadingChangeEmail ? 'Sending...' : 'Request email change'}
           </button>
         </form>
       </div>

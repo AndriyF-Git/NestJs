@@ -15,6 +15,7 @@ import { TwoFactorToggleDto } from './dto/two-factor-toggle.dto';
 import { TwoFactorVerifyDto } from './dto/two-factor-verify.dto';
 import { UsersService } from '../users/users.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ChangeEmailRequestDto } from './dto/change-email-request.dto';
 import { JwtService } from '@nestjs/jwt';
 
 interface ActivationToken {
@@ -28,6 +29,11 @@ interface ActivationToken {
 export class AuthService {
   private activationTokens = new Map<string, ActivationToken>();
   private readonly resetTokenTtlMinutes: number;
+  private readonly emailChangeTokenTtlMinutes: number;
+  private emailChangeTokens = new Map<
+    string,
+    { userId: number; newEmail: string; expiresAt: Date; used: boolean }
+  >();
 
   constructor(
     private readonly captchaService: CaptchaService,
@@ -41,6 +47,8 @@ export class AuthService {
       this.configService.get<string>('PASSWORD_RESET_TOKEN_TTL_MINUTES') ??
         '30',
     );
+    this.emailChangeTokenTtlMinutes =
+      this.configService.get<number>('EMAIL_CHANGE_TTL_MINUTES') ?? 60;
   }
 
   private generateTwoFactorCode(): string {
@@ -506,6 +514,97 @@ export class AuthService {
 
     return {
       message: 'Password has been successfully reset',
+    };
+  }
+
+  async requestEmailChange(userId: number, dto: ChangeEmailRequestDto) {
+    const user = await this.usersService.findById(userId);
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Account is not activated');
+    }
+
+    if (!user.passwordHash) {
+      throw new BadRequestException(
+        'Email cannot be changed for this type of account',
+      );
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    const existing = await this.usersService.findByEmail(dto.newEmail);
+    if (existing && existing.id !== user.id) {
+      throw new BadRequestException('This email is already in use');
+    }
+
+    const token = randomUUID();
+    const expiresAt = new Date(
+      Date.now() + this.emailChangeTokenTtlMinutes * 60 * 1000,
+    );
+
+    this.emailChangeTokens.set(token, {
+      userId: user.id,
+      newEmail: dto.newEmail,
+      expiresAt,
+      used: false,
+    });
+
+    const appUrl =
+      this.configService.get<string>('APP_URL') ?? 'http://localhost:3000';
+
+    // Лінк без фронта (можна відкривати напряму, отримаєш JSON)
+    const confirmLink = `${appUrl}/auth/change-email/confirm?token=${token}`;
+
+    await this.mailService.sendEmailChangeConfirmation(
+      dto.newEmail,
+      confirmLink,
+    );
+
+    return {
+      message:
+        'Confirmation link has been sent to the new email address. Please check your inbox.',
+    };
+  }
+
+  async confirmEmailChange(token: string) {
+    const entry = this.emailChangeTokens.get(token);
+
+    if (!entry || entry.used) {
+      throw new BadRequestException('Invalid or already used token');
+    }
+
+    const now = new Date();
+    if (entry.expiresAt.getTime() < now.getTime()) {
+      this.emailChangeTokens.delete(token);
+      throw new BadRequestException('Token has expired');
+    }
+
+    const user = await this.usersService.findById(entry.userId);
+    if (!user) {
+      this.emailChangeTokens.delete(token);
+      throw new BadRequestException('User for this token was not found');
+    }
+
+    await this.usersService.updateUser(user.id, {
+      email: entry.newEmail,
+    });
+
+    entry.used = true;
+
+    return {
+      message: 'Email changed successfully',
+      email: entry.newEmail,
     };
   }
 }

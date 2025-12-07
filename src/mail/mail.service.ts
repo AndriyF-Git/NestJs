@@ -82,4 +82,20 @@ export class MailService {
 
     console.log('Password reset email sent to', email, '=>', resetLink);
   }
+
+  async sendEmailChangeConfirmation(email: string, link: string) {
+    await this.transporter.sendMail({
+      from: process.env.MAIL_FROM,
+      to: email,
+      subject: 'Підтвердження зміни e-mail',
+      html: `
+        <p>Ви запросили зміну e-mail для вашого акаунта.</p>
+        <p>Щоб підтвердити нову адресу, перейдіть за посиланням:</p>
+        <p><a href="${link}">${link}</a></p>
+        <p>Якщо це були не ви, просто проігноруйте цей лист.</p>
+      `,
+    });
+
+    console.log('Email change confirmation sent to', email, '=>', link);
+  }
 }

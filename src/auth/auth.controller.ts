@@ -6,19 +6,23 @@ import {
   Query,
   Req,
   UseGuards,
+  Res,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { TwoFactorToggleDto } from './dto/two-factor-toggle.dto';
 import { TwoFactorVerifyDto } from './dto/two-factor-verify.dto';
-import { HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { Request } from 'express';
+import type { Response } from 'express';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ChangeEmailRequestDto } from './dto/change-email-request.dto';
 
 interface GoogleUserPayload {
   id: number;
@@ -121,5 +125,58 @@ export class AuthController {
     @Body() dto: ChangePasswordDto,
   ) {
     return this.authService.changePassword(req.user.id, dto);
+  }
+
+  @Post('change-email/request')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  requestEmailChange(
+    @Req() req: Request & { user: JwtUserPayload },
+    @Body() dto: ChangeEmailRequestDto,
+  ) {
+    return this.authService.requestEmailChange(req.user.id, dto);
+  }
+
+  @Get('change-email/confirm')
+  @HttpCode(HttpStatus.OK)
+  async confirmEmailChangeGet(
+    @Query('token') token: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    if (!token) {
+      res.status(400).send(`
+        <html>
+          <body>
+            <h1>Invalid link</h1>
+            <p>Token is missing.</p>
+          </body>
+        </html>
+      `);
+      return;
+    }
+
+    try {
+      await this.authService.confirmEmailChange(token);
+
+      res.send(`
+        <html>
+          <body>
+            <h1>Email changed successfully</h1>
+            <p>You can close this tab and go back to the app.</p>
+          </body>
+        </html>
+      `);
+    } catch (e) {
+      console.error('Error confirming email change:', e);
+
+      res.status(400).send(`
+        <html>
+          <body>
+            <h1>Invalid or expired link</h1>
+            <p>Please request email change again.</p>
+          </body>
+        </html>
+      `);
+    }
   }
 }
