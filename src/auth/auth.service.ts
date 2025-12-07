@@ -14,6 +14,7 @@ import { LoginAttemptsService } from '../security/login-attempts.service';
 import { TwoFactorToggleDto } from './dto/two-factor-toggle.dto';
 import { TwoFactorVerifyDto } from './dto/two-factor-verify.dto';
 import { UsersService } from '../users/users.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtService } from '@nestjs/jwt';
 
 interface ActivationToken {
@@ -378,6 +379,55 @@ export class AuthService {
       accessToken: this.signToken({ id: user.id, email: user.email }),
     };
   }
+
+  async changePassword(userId: number, dto: ChangePasswordDto) {
+    const user = await this.usersService.findById(userId);
+
+    if (!user) {
+      // теоретично не має статись, бо userId беремо з валідного JWT
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException(
+        'Account is not activated. Please check your email.',
+      );
+    }
+
+    if (!user.passwordHash) {
+      // Наприклад, акаунт створений тільки через Google OAuth
+      throw new BadRequestException(
+        'Password cannot be changed for this type of account',
+      );
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash,
+    );
+
+    if (!isCurrentPasswordValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException(
+        'New password must be different from the current password',
+      );
+    }
+
+    const newPasswordHash = await bcrypt.hash(dto.newPassword, 10);
+
+    await this.usersService.updateUser(user.id, {
+      passwordHash: newPasswordHash,
+      // Сюди пізніше можна додати lastPasswordChangeAt, tokenVersion++ і т.д.
+    });
+
+    return {
+      message: 'Password changed successfully',
+    };
+  }
+
   async requestPasswordReset(email: string) {
     const user = await this.usersService.findByEmail(email);
 

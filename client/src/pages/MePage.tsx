@@ -26,6 +26,14 @@ const MePage: React.FC = () => {
   const [message2fa, setMessage2fa] = useState<string | null>(null);
   const [error2fa, setError2fa] = useState<string | null>(null);
 
+  // стани для зміни пароля
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [loadingChangePassword, setLoadingChangePassword] = useState(false);
+  const [errorChangePassword, setErrorChangePassword] = useState<string | null>(null);
+  const [messageChangePassword, setMessageChangePassword] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchMe = async () => {
       try {
@@ -93,6 +101,52 @@ const MePage: React.FC = () => {
     }
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setErrorChangePassword(null);
+    setMessageChangePassword(null);
+
+    if (newPassword !== confirmNewPassword) {
+      setErrorChangePassword('Новий пароль і підтвердження не збігаються');
+      return;
+    }
+
+    try {
+      setLoadingChangePassword(true);
+
+      await api.post('/auth/change-password', {
+        currentPassword,
+        newPassword,
+      });
+
+      setMessageChangePassword('Пароль успішно змінено');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (err: unknown) {
+      console.error(err);
+      if (axios.isAxiosError(err)) {
+        const raw = (err.response?.data as { message?: string | string[] })?.message;
+        let msg: string;
+
+        if (Array.isArray(raw)) {
+          msg = raw.join(', ');
+        } else if (typeof raw === 'string') {
+          msg = raw;
+        } else {
+          msg = 'Не вдалося змінити пароль';
+        }
+
+        setErrorChangePassword(msg);
+      } else {
+        setErrorChangePassword('Unexpected error');
+      }
+    } finally {
+      setLoadingChangePassword(false);
+    }
+  };
+
   if (loading) {
     return <div style={{ padding: 20 }}>Loading...</div>;
   }
@@ -156,6 +210,68 @@ const MePage: React.FC = () => {
               ? 'Disable 2FA'
               : 'Enable 2FA'}
         </button>
+      </div>
+
+      {/* Блок зміни пароля */}
+      <div
+        style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #ddd' }}
+      >
+        <h3>Change password</h3>
+        <form onSubmit={handleChangePassword}>
+          <div style={{ marginBottom: 8 }}>
+            <label>
+              Current password
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                style={{ width: '100%', marginTop: 4 }}
+                required
+              />
+            </label>
+          </div>
+
+          <div style={{ marginBottom: 8 }}>
+            <label>
+              New password
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                style={{ width: '100%', marginTop: 4 }}
+                required
+              />
+            </label>
+          </div>
+
+          <div style={{ marginBottom: 8 }}>
+            <label>
+              Confirm new password
+              <input
+                type="password"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                style={{ width: '100%', marginTop: 4 }}
+                required
+              />
+            </label>
+          </div>
+
+          {errorChangePassword && (
+            <div style={{ color: 'red', marginBottom: 8 }}>
+              {errorChangePassword}
+            </div>
+          )}
+          {messageChangePassword && (
+            <div style={{ color: 'green', marginBottom: 8 }}>
+              {messageChangePassword}
+            </div>
+          )}
+
+          <button type="submit" disabled={loadingChangePassword}>
+            {loadingChangePassword ? 'Changing...' : 'Change password'}
+          </button>
+        </form>
       </div>
 
       <button
