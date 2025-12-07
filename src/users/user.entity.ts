@@ -15,6 +15,9 @@ export class User {
   @Column({ default: false })
   isActive: boolean;
 
+  @Column({ type: 'datetime', nullable: true })
+  deactivatedAt: Date | null;
+
   // Ліміт спроб входу
   @Column({ default: 0 })
   failedLoginAttempts: number;

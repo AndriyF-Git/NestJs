@@ -26,6 +26,14 @@ const MePage: React.FC = () => {
   const [message2fa, setMessage2fa] = useState<string | null>(null);
   const [error2fa, setError2fa] = useState<string | null>(null);
 
+  // стани для деактивації акаунта
+  const [passwordForDeactivate, setPasswordForDeactivate] = useState('');
+  const [loadingDeactivate, setLoadingDeactivate] = useState(false);
+  const [errorDeactivate, setErrorDeactivate] = useState<string | null>(null);
+  const [messageDeactivate, setMessageDeactivate] = useState<string | null>(
+    null,
+  );
+
   // стани для зміни пароля
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -111,6 +119,55 @@ const MePage: React.FC = () => {
       }
     } finally {
       setLoading2fa(false);
+    }
+  };
+
+  const handleDeactivateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setErrorDeactivate(null);
+    setMessageDeactivate(null);
+
+    if (!passwordForDeactivate) {
+      setErrorDeactivate('Введіть пароль для підтвердження');
+      return;
+    }
+
+    try {
+      setLoadingDeactivate(true);
+
+      await api.post('/auth/deactivate-account', {
+        password: passwordForDeactivate,
+      });
+
+      setMessageDeactivate(
+        'Акаунт деактивовано. Ви будете виведені з системи.',
+      );
+
+      // Можна одразу розлогінити
+      logout();
+      navigate('/login');
+    } catch (err: unknown) {
+      console.error(err);
+      if (axios.isAxiosError(err)) {
+        const raw = (err.response?.data as { message?: string | string[] })
+          ?.message;
+        let msg: string;
+
+        if (Array.isArray(raw)) {
+          msg = raw.join(', ');
+        } else if (typeof raw === 'string') {
+          msg = raw;
+        } else {
+          msg = 'Не вдалося деактивувати акаунт';
+        }
+
+        setErrorDeactivate(msg);
+      } else {
+        setErrorDeactivate('Unexpected error');
+      }
+    } finally {
+      setLoadingDeactivate(false);
     }
   };
 
@@ -383,6 +440,55 @@ const MePage: React.FC = () => {
 
           <button type="submit" disabled={loadingChangeEmail}>
             {loadingChangeEmail ? 'Sending...' : 'Request email change'}
+          </button>
+        </form>
+      </div>
+
+      {/* Danger zone: деактивація акаунта */}
+      <div
+        style={{
+          marginTop: 32,
+          paddingTop: 16,
+          borderTop: '1px solid #f99',
+        }}
+      >
+        <h3 style={{ color: '#c00' }}>Danger zone</h3>
+        <p>
+          Деактивація акаунта зробить його неактивним. Ви не зможете увійти,
+          поки адміністратор його не відновить, або ви самі його активуєте
+        </p>
+
+        <form onSubmit={handleDeactivateAccount}>
+          <div style={{ marginBottom: 8 }}>
+            <label>
+              Password
+              <input
+                type="password"
+                value={passwordForDeactivate}
+                onChange={(e) => setPasswordForDeactivate(e.target.value)}
+                style={{ width: '100%', marginTop: 4 }}
+                required
+              />
+            </label>
+          </div>
+
+          {errorDeactivate && (
+            <div style={{ color: 'red', marginBottom: 8 }}>
+              {errorDeactivate}
+            </div>
+          )}
+          {messageDeactivate && (
+            <div style={{ color: 'green', marginBottom: 8 }}>
+              {messageDeactivate}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loadingDeactivate}
+            style={{ backgroundColor: '#c00', color: '#fff' }}
+          >
+            {loadingDeactivate ? 'Deactivating...' : 'Deactivate account'}
           </button>
         </form>
       </div>

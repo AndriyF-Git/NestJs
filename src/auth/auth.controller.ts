@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
+import { DeactivateAccountDto } from './dto/deactivate-account.dto';
 import { LoginDto } from './dto/login.dto';
 import { TwoFactorToggleDto } from './dto/two-factor-toggle.dto';
 import { TwoFactorVerifyDto } from './dto/two-factor-verify.dto';
@@ -42,6 +43,16 @@ export class AuthController {
   @Get('activate')
   activate(@Query('token') token: string) {
     return this.authService.activateAccount(token);
+  }
+
+  @Post('deactivate-account')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  deactivateAccount(
+    @Req() req: Request & { user: JwtUserPayload },
+    @Body() dto: DeactivateAccountDto,
+  ) {
+    return this.authService.deactivateAccount(req.user.id, dto);
   }
 
   @Get('login-attempts')

@@ -16,7 +16,6 @@ export class CaptchaService {
       throw new Error('RECAPTCHA_SECRET_KEY is not configured');
     }
 
-    // якщо в тебе Node 18+ – можна використовувати глобальний fetch
     const params = new URLSearchParams();
     params.append('secret', secret);
     params.append('response', token);
@@ -36,10 +35,8 @@ export class CaptchaService {
     };
 
     if (!data.success) {
+      console.error('reCAPTCHA error-codes:', data['error-codes']);
       throw new BadRequestException('Failed to verify reCAPTCHA token');
     }
-
-    // Якщо буде юзатись reCAPTCHA v3, можна ще порог по score перевіряти
-    // if (data.score !== undefined && data.score < 0.5) { ... }
   }
 }

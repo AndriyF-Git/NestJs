@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { RegisterDto } from './dto/register.dto';
+import { DeactivateAccountDto } from './dto/deactivate-account.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { CaptchaService } from '../security/captcha.service';
@@ -142,6 +143,38 @@ export class AuthService {
     return {
       message: 'Account activated successfully',
       email: user.email,
+    };
+  }
+
+  async deactivateAccount(userId: number, dto: DeactivateAccountDto) {
+    const user = await this.usersService.findById(userId);
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (!user.passwordHash) {
+      throw new BadRequestException(
+        'This account type cannot be deactivated this way',
+      );
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Password is incorrect');
+    }
+
+    await this.usersService.updateUser(user.id, {
+      isActive: false,
+      deactivatedAt: new Date(),
+    });
+
+    return {
+      message: 'Account has been deactivated',
     };
   }
 
