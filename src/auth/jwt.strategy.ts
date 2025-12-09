@@ -18,7 +18,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET') ?? 'dev-secret', // має збігатися з JwtModule
+      secretOrKey: configService.get<string>('JWT_SECRET') ?? 'dev-secret',
     });
   }
 
@@ -37,7 +37,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     return {
       id: user.id,
       email: user.email,
+      role: user.role,
       twoFactorEnabled: user.twoFactorEnabled,
+      isActive: user.isActive,
     };
   }
 }

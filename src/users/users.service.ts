@@ -3,6 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
 
+export interface AdminUserSummary {
+  id: number;
+  email: string;
+  isActive: boolean;
+  twoFactorEnabled: boolean;
+  role: 'user' | 'admin';
+}
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -22,6 +30,18 @@ export class UsersService {
     return this.usersRepo.findOne({ where: { googleId } });
   }
 
+  async findAll(): Promise<AdminUserSummary[]> {
+    const users = await this.usersRepo.find();
+
+    return users.map((u) => ({
+      id: u.id,
+      email: u.email,
+      isActive: u.isActive,
+      twoFactorEnabled: u.twoFactorEnabled,
+      role: u.role,
+    }));
+  }
+
   async createUser(data: Partial<User>) {
     const user = this.usersRepo.create(data);
     return this.usersRepo.save(user);
@@ -30,6 +50,14 @@ export class UsersService {
   async updateUser(id: number, data: Partial<User>) {
     await this.usersRepo.update(id, data);
     return this.findById(id);
+  }
+
+  async updateUserRole(id: number, role: 'user' | 'admin'): Promise<void> {
+    await this.usersRepo.update(id, { role });
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    await this.usersRepo.delete(id);
   }
 
   async incrementFailedAttempts(id: number) {

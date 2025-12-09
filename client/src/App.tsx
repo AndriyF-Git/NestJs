@@ -6,6 +6,7 @@ import MePage from './pages/MePage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import TwoFactorPage from './pages/TwoFaPage';
+import AdminPage from './pages/AdminPage';
 import { useAuth } from './context/AuthContext';
 
 const App: React.FC = () => {
@@ -28,6 +29,12 @@ const App: React.FC = () => {
       />
 
       <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route
+        path="/admin"
+        element={
+          isAuthenticated ? <AdminPage /> : <Navigate to="/login" replace />
+        }
+      />
     </Routes>
   );
 };

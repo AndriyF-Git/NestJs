@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
+
 import { AuthModule } from './auth/auth.module';
 import { SecurityModule } from './security/security.module';
 import { MailModule } from './mail/mail.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -18,6 +20,7 @@ import { MailModule } from './mail/mail.module';
       logging: false, // можна включити, щоб бачити SQL
     }),
     SecurityModule,
+    AdminModule,
     MailModule,
     AuthModule,
   ],

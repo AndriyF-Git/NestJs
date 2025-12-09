@@ -10,6 +10,7 @@ interface MeResponse {
   email: string;
   isActive?: boolean;
   twoFactorEnabled?: boolean;
+  role?: 'user' | 'admin';
 }
 
 const MePage: React.FC = () => {
@@ -492,6 +493,14 @@ const MePage: React.FC = () => {
           </button>
         </form>
       </div>
+      {user.role === 'admin' && (
+        <button
+          style={{ marginTop: 20, marginRight: 12 }}
+          onClick={() => navigate('/admin')}
+        >
+          Open admin panel
+        </button>
+      )}
 
       <button
         style={{ marginTop: 20 }}

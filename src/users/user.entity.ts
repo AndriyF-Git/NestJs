@@ -8,6 +8,9 @@ export class User {
   @Column({ unique: true })
   email: string;
 
+  @Column({ type: 'varchar', default: 'user' })
+  role: 'user' | 'admin';
+
   // Для звичайної реєстрації
   @Column({ nullable: true })
   passwordHash: string;
