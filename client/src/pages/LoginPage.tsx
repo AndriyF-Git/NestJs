@@ -13,21 +13,18 @@ const LoginPage: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null); // для повідомлень про активацію / інфо
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setInfo(null);
     setLoading(true);
 
     try {
       const data = await login({ email, password });
 
-      if (data.accessToken) {
-        authLogin(data.accessToken);
-        navigate('/me');
-        return;
-      }
-
+      // Якщо увімкнена 2FA — йдемо по 2FA-флоу
       if (data.twoFactorRequired) {
         // збережемо email, щоб не просити ще раз
         localStorage.setItem('twoFactorEmail', email);
@@ -40,14 +37,44 @@ const LoginPage: React.FC = () => {
         navigate('/login/2fa');
         return;
       }
+
+      // Звичайний успішний логін через accessToken
+      if (data.accessToken) {
+        authLogin(data.accessToken);
+        navigate('/me');
+        return;
+      }
+
       setError('Unexpected login response');
     } catch (err: unknown) {
       console.error(err);
 
       if (axios.isAxiosError(err)) {
+        const data = err.response?.data as
+          | { message?: string; code?: string; activationToken?: string }
+          | undefined;
+
+        const code = data?.code;
         const message =
-          (err.response?.data as { message?: string })?.message ||
-          'Login failed';
+          data?.message || 'Login failed';
+
+        // Нова логіка: акаунт не активований або деактивований
+        if (code === 'ACCOUNT_NOT_ACTIVATED' || code === 'ACCOUNT_DEACTIVATED') {
+          setError(message);
+          setInfo(
+            'We have sent a new activation link to your email. Please check your inbox (and spam folder).',
+          );
+
+          // У dev середовищі бек може повертати activationToken — зручно для Postman/консолі
+          if (data?.activationToken) {
+            console.log('Activation token (dev):', data.activationToken);
+          }
+
+          setLoading(false);
+          return;
+        }
+
+        // Інші помилки (невірний пароль, заблокований акаунт тощо)
         setError(message);
       } else {
         setError('Unexpected error');
@@ -90,7 +117,13 @@ const LoginPage: React.FC = () => {
           </label>
         </div>
 
-        {error && <div style={{ color: 'red', marginBottom: 12 }}>{error}</div>}
+        {error && (
+          <div style={{ color: 'red', marginBottom: 12 }}>{error}</div>
+        )}
+
+        {info && (
+          <div style={{ color: 'green', marginBottom: 12 }}>{info}</div>
+        )}
 
         <button type="submit" disabled={loading}>
           {loading ? 'Logging in...' : 'Login'}

@@ -15,6 +15,7 @@ import { LoginAttemptsService } from '../security/login-attempts.service';
 import { TwoFactorToggleDto } from './dto/two-factor-toggle.dto';
 import { TwoFactorVerifyDto } from './dto/two-factor-verify.dto';
 import { UsersService } from '../users/users.service';
+import { User } from '../users/user.entity';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ChangeEmailRequestDto } from './dto/change-email-request.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -83,19 +84,7 @@ export class AuthService {
       isActive: false,
     });
 
-    // Генеруємо токен активації
-    const token = randomUUID();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 години
-
-    this.activationTokens.set(token, {
-      token,
-      userId: user.id,
-      expiresAt,
-      used: false,
-    });
-
-    // Надсилаємо лист
-    await this.mailService.sendActivationEmail(user.email, token);
+    const token = await this.createActivationTokenAndSendEmail(user);
 
     const response: any = {
       id: user.id,
@@ -104,7 +93,6 @@ export class AuthService {
         'User registered. Please check your email to activate your account.',
     };
 
-    // Не попадає в продакш, але всеодно потім видалю токен з JSON після тестів
     const appEnv = this.configService.get<string>('APP_ENV');
     if (appEnv === 'development') {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -113,6 +101,22 @@ export class AuthService {
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return response;
+  }
+
+  private async createActivationTokenAndSendEmail(user: User) {
+    const token = randomUUID();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // TTL як і раніше
+
+    this.activationTokens.set(token, {
+      token,
+      userId: user.id,
+      expiresAt,
+      used: false,
+    });
+
+    await this.mailService.sendActivationEmail(user.email, token);
+
+    return token;
   }
 
   async activateAccount(token: string) {
@@ -137,7 +141,10 @@ export class AuthService {
       throw new BadRequestException('User for this token was not found');
     }
 
-    await this.usersService.updateUser(user.id, { isActive: true });
+    await this.usersService.updateUser(user.id, {
+      isActive: true,
+      deactivatedAt: null,
+    });
     entry.used = true;
 
     return {
@@ -214,9 +221,42 @@ export class AuthService {
         timestamp: now,
       });
 
-      throw new UnauthorizedException(
-        'Account is not activated. Please check your email.',
-      );
+      if (user.deactivatedAt) {
+        const token = await this.createActivationTokenAndSendEmail(user);
+
+        const appEnv = this.configService.get<string>('APP_ENV');
+
+        // У проді просто кажемо "ми відправили лінк"
+        // У dev можна ще повернути token для зручності тестування
+        const response: any = {
+          message:
+            'Your account is deactivated. We have sent a new activation link to your email.',
+          code: 'ACCOUNT_DEACTIVATED',
+        };
+
+        if (appEnv === 'development') {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          response.activationToken = token;
+        }
+
+        throw new UnauthorizedException(response);
+      }
+
+      const token = await this.createActivationTokenAndSendEmail(user);
+      const appEnv = this.configService.get<string>('APP_ENV');
+
+      const response: any = {
+        message:
+          'Your account is not activated. We have sent a new activation link to your email.',
+        code: 'ACCOUNT_NOT_ACTIVATED',
+      };
+
+      if (appEnv === 'development') {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        response.activationToken = token;
+      }
+
+      throw new UnauthorizedException(response);
     }
 
     const isPasswordValid = await bcrypt.compare(
