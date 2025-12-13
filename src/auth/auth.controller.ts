@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { DeactivateAccountDto } from './dto/deactivate-account.dto';
@@ -39,7 +40,10 @@ interface JwtUserPayload {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Get('activate')
   activate(@Query('token') token: string) {
@@ -96,14 +100,26 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  googleCallback(@Req() req: Request & { user: GoogleUserPayload }) {
+  googleCallback(
+    @Req() req: Request & { user: GoogleUserPayload },
+    @Res() res: Response,
+  ): void {
+    // Якщо з якихось причин user не прийшов
+    if (!req.user) {
+      const frontendUrl =
+        this.configService.get<string>('FRONTEND_URL') ??
+        'http://localhost:5173';
+      res.redirect(`${frontendUrl}/login?oauth=error`);
+      return;
+    }
+
     const accessToken = this.authService.signToken(req.user);
 
-    return {
-      message: 'Login with Google successful',
-      user: req.user,
-      accessToken,
-    };
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
+
+    // тут ми відправляємо токен на фронт, де він буде збережений через AuthContext
+    res.redirect(`${frontendUrl}/login/oauth-success?token=${accessToken}`);
   }
 
   @Get('me')

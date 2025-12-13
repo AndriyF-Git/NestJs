@@ -6,6 +6,7 @@ import MePage from './pages/MePage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import TwoFactorPage from './pages/TwoFaPage';
+import GoogleCallbackPage from './pages/GoogleCallbackPage'
 import AdminPage from './pages/AdminPage';
 import { useAuth } from './context/AuthContext';
 
@@ -20,6 +21,8 @@ const App: React.FC = () => {
 
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/login/oauth-success" element={<GoogleCallbackPage />} />
+
 
       <Route
         path="/me"

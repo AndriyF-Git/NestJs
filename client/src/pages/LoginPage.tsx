@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { login } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
@@ -14,7 +14,13 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null); // для повідомлень про активацію / інфо
-
+  const backendUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+  const [params] = useSearchParams();
+  useEffect(() => {
+    if (params.get('oauth') === 'error') {
+      setError('Google login failed. Please try again.');
+    }
+  }, [params]);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -55,11 +61,13 @@ const LoginPage: React.FC = () => {
           | undefined;
 
         const code = data?.code;
-        const message =
-          data?.message || 'Login failed';
+        const message = data?.message || 'Login failed';
 
         // Нова логіка: акаунт не активований або деактивований
-        if (code === 'ACCOUNT_NOT_ACTIVATED' || code === 'ACCOUNT_DEACTIVATED') {
+        if (
+          code === 'ACCOUNT_NOT_ACTIVATED' ||
+          code === 'ACCOUNT_DEACTIVATED'
+        ) {
           setError(message);
           setInfo(
             'We have sent a new activation link to your email. Please check your inbox (and spam folder).',
@@ -117,18 +125,34 @@ const LoginPage: React.FC = () => {
           </label>
         </div>
 
-        {error && (
-          <div style={{ color: 'red', marginBottom: 12 }}>{error}</div>
-        )}
+        {error && <div style={{ color: 'red', marginBottom: 12 }}>{error}</div>}
 
-        {info && (
-          <div style={{ color: 'green', marginBottom: 12 }}>{info}</div>
-        )}
+        {info && <div style={{ color: 'green', marginBottom: 12 }}>{info}</div>}
 
         <button type="submit" disabled={loading}>
           {loading ? 'Logging in...' : 'Login'}
         </button>
       </form>
+      <div style={{ margin: '16px 0', textAlign: 'center', color: '#666' }}>
+        or
+      </div>
+
+      <button
+        type="button"
+        style={{
+          width: '100%',
+          marginBottom: 12,
+          padding: '8px 12px',
+          backgroundColor: '#fff',
+          border: '1px solid #ccc',
+          cursor: 'pointer',
+        }}
+        onClick={() => {
+          window.location.href = `${backendUrl}/auth/google`;
+        }}
+      >
+        Continue with Google
+      </button>
 
       <p style={{ marginTop: 16 }}>
         Don&apos;t have an account?{' '}
